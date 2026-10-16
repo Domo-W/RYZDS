@@ -16,8 +16,10 @@ app.post("/api/canvas", async (req: Request<unknown, unknown, CanvasRequest>, re
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+  // Abort the Claude stream if the client disconnects. (Listen on the response: on modern Node the
+  // request's "close" fires as soon as the body is consumed, which would cancel the stream instantly.)
   const ac = new AbortController();
-  req.on("close", () => ac.abort());
+  res.on("close", () => { if (!res.writableFinished) ac.abort(); });
   await runCanvasTurn(req.body, (o) => res.write(JSON.stringify(o) + "\n"), ac.signal);
   res.end();
 });

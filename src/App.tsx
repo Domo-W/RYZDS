@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Tldraw, type Editor } from "tldraw";
+import { Tldraw, type Editor, type TLComponents } from "tldraw";
 import { CanvasApplier } from "./canvas/apply";
 import { ClaudePresence } from "./canvas/presence";
 import { describeCanvas, exportCanvasPng } from "./canvas/snapshot";
 import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
+import mascot from "./Icon-Mascot.png";
 
 type Status = "idle" | "thinking" | "drawing";
 type LogItem = { role: "user" | "claude"; text: string; id: number };
@@ -20,6 +21,12 @@ const PING_OPTIONS = [
   { label: "Label it", prompt: "Label and annotate what is here" },
   { label: "Why?", prompt: "Explain why this works and why it matters" },
 ];
+
+// Keep the canvas calm: only the bottom toolbar from tldraw's UI.
+const TL_COMPONENTS: TLComponents = {
+  MenuPanel: null, StylePanel: null, HelpMenu: null, NavigationPanel: null, PageMenu: null,
+  DebugPanel: null, DebugMenu: null, SharePanel: null, TopPanel: null,
+};
 
 const SUGGESTIONS = [
   "Explain how a neural network learns, visually",
@@ -122,13 +129,13 @@ export default function App() {
 
   return (
     <div className="app">
-      <Tldraw onMount={onMount} />
+      <Tldraw onMount={onMount} components={TL_COMPONENTS} />
       <div className="overlay">
         {health && !health.hasKey && (
-          <div className="banner">No ANTHROPIC_API_KEY set — running the built-in demo script. Add a key to <code>.env</code> and restart.</div>
+          <div className="banner">Demo mode — add ANTHROPIC_API_KEY to go live</div>
         )}
         <form className={`promptbar glass ${status !== "idle" ? "busy" : ""}`} onSubmit={(e) => { e.preventDefault(); void send(prompt); }}>
-          <span className="logo">VizAI</span>
+          <img className="mascot" src={mascot} alt="" />
           <input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -136,14 +143,14 @@ export default function App() {
             disabled={status !== "idle"}
             autoFocus
           />
-          <button type="button" className={`ping-btn ${ping ? "on" : ""}`} title="Ping: click a spot on the canvas and ask about it (⌘P)"
+          <button type="button" className={`icon-btn ${ping ? "on" : ""}`} title="Ping a spot on the canvas (⌘P)"
             onClick={() => setPing((p) => (p ? null : { mode: "arm" }))} disabled={status !== "idle"}>⌖</button>
-          <label className="toggle" title="Send a screenshot of the canvas so Claude can see what you drew">
-            <input type="checkbox" checked={seeCanvas} onChange={(e) => setSeeCanvas(e.target.checked)} /> 👁
-          </label>
+          <button type="button" className={`icon-btn ${seeCanvas ? "on" : ""}`} aria-pressed={seeCanvas}
+            title={seeCanvas ? "Claude sees the canvas — click to turn off" : "Claude can't see the canvas — click to turn on"}
+            onClick={() => setSeeCanvas((v) => !v)}>◉</button>
           {status === "idle"
-            ? <button type="submit" disabled={!prompt.trim()}>Go</button>
-            : <button type="button" className="stop" onClick={stop}>Stop</button>}
+            ? <button type="submit" className="go" disabled={!prompt.trim()} aria-label="Send">↑</button>
+            : <button type="button" className="stop" onClick={stop} aria-label="Stop">■</button>}
         </form>
         {ping?.mode === "arm" && status === "idle" && (
           <div className="status glass arm"><span className="dot" /><span className="txt">Click a spot on the canvas to ask about it · Esc to cancel</span></div>
@@ -172,6 +179,7 @@ export default function App() {
         )}
         {empty && status === "idle" && (
           <div className="suggestions">
+            <img className="mascot-hero" src={mascot} alt="VizAI mascot" />
             <h1>Ask. Watch it explain.</h1>
             <p>An AI that thinks on a canvas instead of a chat box.</p>
             <div className="chips">

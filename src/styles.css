@@ -12,10 +12,10 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .overlay > * { pointer-events: auto; }
 .glass { background: var(--glass); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
 
-.banner { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); background: rgba(255, 244, 229, .85); backdrop-filter: blur(16px); color: #7a4100; border: 1px solid rgba(255, 190, 120, .6); padding: 8px 14px; border-radius: 12px; font-size: 13px; max-width: 90vw; animation: rise .5s var(--ease); }
+.banner { position: absolute; top: 74px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 12px; letter-spacing: .01em; opacity: .8; animation: rise .5s var(--ease); }
 .banner code { background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
 
-.promptbar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; width: min(720px, 92vw); padding: 8px 8px 8px 16px; border-radius: 999px; transition: box-shadow .35s var(--ease), transform .35s var(--ease), width .35s var(--ease); animation: rise .6s var(--ease); }
+.promptbar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; width: min(620px, 90vw); padding: 6px 6px 6px 16px; border-radius: 999px; transition: box-shadow .35s var(--ease), transform .35s var(--ease), width .35s var(--ease); animation: rise .6s var(--ease); }
 .promptbar:focus-within { box-shadow: 0 14px 50px rgba(20, 20, 40, 0.22), 0 0 0 4px rgba(217, 119, 87, .18), 0 1px 0 rgba(255,255,255,.6) inset; transform: translateX(-50%) translateY(-1px); }
 .promptbar.busy { box-shadow: 0 14px 50px rgba(124, 92, 255, 0.22), 0 0 0 4px rgba(124, 92, 255, .16), 0 1px 0 rgba(255,255,255,.6) inset; }
 .logo { font-weight: 800; letter-spacing: -0.03em; font-size: 15px; background: linear-gradient(120deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
@@ -73,3 +73,18 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .wheel button { position: absolute; transform: translate(-50%, -50%); padding: 8px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; animation: wheelpop .35s var(--ease) both; transition: transform .2s var(--ease), border-color .2s; }
 .wheel button:hover { transform: translate(-50%, -50%) scale(1.1); border-color: var(--accent); }
 @keyframes wheelpop { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* Calm prompt bar */
+.spark { color: var(--accent); font-size: 15px; margin-right: 8px; }
+.promptbar .icon-btn { background: transparent !important; color: var(--muted) !important; font-size: 17px; line-height: 1; width: 34px; height: 34px; padding: 0 !important; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.promptbar .icon-btn:hover:not(:disabled) { background: rgba(0,0,0,.06) !important; transform: none; }
+.promptbar .icon-btn.on { color: var(--accent) !important; }
+.promptbar button.go, .promptbar button.stop { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; }
+.promptbar button.stop { font-size: 11px; }
+.status { top: 72px; }
+@media (prefers-color-scheme: dark) { .promptbar .icon-btn:hover:not(:disabled) { background: rgba(255,255,255,.08) !important; } }
+
+/* Team mascot */
+.mascot { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; margin-right: 8px; flex: none; }
+.mascot-hero { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 10px 24px rgba(20,20,40,.18)); animation: float 3.2s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
