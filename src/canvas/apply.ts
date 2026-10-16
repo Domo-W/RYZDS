@@ -42,7 +42,7 @@ export class CanvasApplier {
     switch (op.op) {
       case "say":
         this.onSay(String(op.text ?? ""));
-        this.presence.say(String(op.text ?? ""));
+        this.presence.say(String(op.text ?? ""), op.mood);
         await sleep(250);
         return;
       case "wait":
