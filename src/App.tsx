@@ -56,6 +56,7 @@ export default function App() {
   const skipFlag = useRef(false);
   const demoAbort = useRef(false);
   const [paused, setPaused] = useState(false);
+  const [subtitle, setSubtitle] = useState<{ text: string; id: number } | null>(null);
   const pausedRef = useRef(false);
   const togglePause = () => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); if (applierRef.current) applierRef.current.paused = pausedRef.current; };
   const [log, setLog] = useState<LogItem[]>([]);
@@ -93,7 +94,7 @@ export default function App() {
 
   const onMount = useCallback((ed: Editor) => {
     setEditor(ed);
-    applierRef.current = new CanvasApplier(ed, new ClaudePresence(ed), (t) => pushLog("claude", t));
+    applierRef.current = new CanvasApplier(ed, new ClaudePresence(ed), (t) => { pushLog("claude", t); setSubtitle({ text: t, id: Date.now() }); });
   }, [pushLog]);
 
   const send = useCallback(async (text: string) => {
@@ -249,6 +250,12 @@ export default function App() {
     void send(`${prompt}. Target: ${target}. Keep new content near that spot.`);
   };
   const empty = log.length === 0;
+  useEffect(() => {
+    if (!subtitle) return;
+    const t = setTimeout(() => setSubtitle((s) => (s?.id === subtitle.id ? null : s)), 7000);
+    return () => clearTimeout(t);
+  }, [subtitle]);
+
   const chips = paperOpen && paper ? ["Explain this research paper to me", ...SUGGESTIONS] : SUGGESTIONS;
 
   return (
@@ -318,6 +325,12 @@ export default function App() {
             <div className="chips">
               {chips.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
             </div>
+          </div>
+        )}
+        {subtitle && (
+          <div className="subtitle glass" key={subtitle.id}>
+            <img src={mascot} alt="" />
+            <span>{subtitle.text}</span>
           </div>
         )}
       </div>
