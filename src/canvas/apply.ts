@@ -79,6 +79,7 @@ export class CanvasApplier {
         const props: Record<string, unknown> = {};
         const text = op.text ?? op.label;
         if (typeof text === "string" && "richText" in shape.props) props.richText = toRichText(text);
+        else if (typeof text === "string" && "text" in shape.props) props.text = text;
         if (typeof op.name === "string" && "name" in shape.props) props.name = op.name;
         if (typeof op.color === "string" && "color" in shape.props) props.color = op.color;
         if (typeof op.w === "number" && "w" in shape.props) props.w = op.w;
@@ -146,7 +147,7 @@ export class CanvasApplier {
         const end = op.end ?? (b ? { x: b.midX, y: b.midY } : { x: start.x + 200, y: start.y });
         ed.createShape({ id, type: "arrow", x: 0, y: 0, props: {
           start, end, color: op.color ?? "black", dash: op.dash ?? "draw", bend: num(op.bend, 0),
-          richText: toRichText(String(op.label ?? "")), arrowheadStart: "none", arrowheadEnd: "arrow",
+          text: String(op.label ?? ""), arrowheadStart: "none", arrowheadEnd: "arrow",
         } });
         const bindings: Parameters<Editor["createBindings"]>[0] = [];
         for (const [terminal, box, target] of [["start", a, op.from], ["end", b, op.to]] as const) {
