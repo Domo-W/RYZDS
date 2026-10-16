@@ -38,7 +38,18 @@ Without an API key the app runs a built-in demo script so the UI can still be sh
 comparisons, plans, and anything with a canvas screenshot go to `claude-sonnet-5-5`. Override with
 `VIZAI_MODEL`, `VIZAI_FAST_MODEL`, `VIZAI_EFFORT`, `VIZAI_FAST_EFFORT`, `VIZAI_PORT` in `.env`.
 
-Production: `npm run build && npm start` serves the built app and API from one process.
+Production (any Node host): `npm run build && npm start` serves the built app and API from one process.
+
+### Deploy to Vercel
+
+The repo is Vercel-ready: `api/canvas.ts` and `api/health.ts` are serverless functions (streaming),
+the Vite build is the static site.
+
+1. Import the GitHub repo at https://vercel.com/new (framework preset: Vite — auto-detected).
+2. Add the environment variable `ANTHROPIC_API_KEY` in Project Settings → Environment Variables.
+3. Deploy. Later pushes to `main` redeploy automatically.
+
+Or from the CLI: `npx vercel` then `npx vercel --prod` (set the env var with `vercel env add ANTHROPIC_API_KEY`).
 
 ## Project layout
 

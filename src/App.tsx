@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Tldraw, type Editor } from "tldraw";
 import { CanvasApplier } from "./canvas/apply";
 import { ClaudePresence } from "./canvas/presence";
@@ -7,6 +7,19 @@ import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
 
 type Status = "idle" | "thinking" | "drawing";
 type LogItem = { role: "user" | "claude"; text: string; id: number };
+
+type Ping =
+  | { mode: "arm" }
+  | { mode: "wheel"; sx: number; sy: number; px: number; py: number; near: string[] };
+
+const PING_OPTIONS = [
+  { label: "Explain", prompt: "Explain what is here in more depth" },
+  { label: "Expand", prompt: "Expand on this with more detail" },
+  { label: "Example", prompt: "Give a concrete example of this, drawn right next to it" },
+  { label: "Simplify", prompt: "Simplify this: redraw it in a clearer, simpler way" },
+  { label: "Label it", prompt: "Label and annotate what is here" },
+  { label: "Why?", prompt: "Explain why this works and why it matters" },
+];
 
 const SUGGESTIONS = [
   "Explain how a neural network learns, visually",
@@ -24,6 +37,7 @@ export default function App() {
   const [status, setStatus] = useState<Status>("idle");
   const [thought, setThought] = useState("");
   const [modelLabel, setModelLabel] = useState("");
+  const [ping, setPing] = useState<Ping | null>(null);
   const [log, setLog] = useState<LogItem[]>([]);
   const [prompt, setPrompt] = useState("");
   const [seeCanvas, setSeeCanvas] = useState(true);
@@ -80,6 +94,29 @@ export default function App() {
   }, [editor, status, seeCanvas, pushLog]);
 
   const stop = () => abortRef.current?.abort();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPing(null);
+      if (e.key.toLowerCase() === "p" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); setPing((p) => (p ? null : { mode: "arm" })); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const onPingClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!editor) return;
+    const page = editor.screenToPage({ x: e.clientX, y: e.clientY });
+    const near = editor.getShapesAtPoint(page, { hitInside: true, margin: 48 }).map((s) => s.id.replace(/^shape:/, ""));
+    setPing({ mode: "wheel", sx: e.clientX, sy: e.clientY, px: Math.round(page.x), py: Math.round(page.y), near });
+  };
+
+  const firePing = (prompt: string) => {
+    if (!ping || ping.mode !== "wheel") return;
+    const target = ping.near.length ? `these shapes: ${ping.near.join(", ")}` : `the empty area around canvas point (${ping.px}, ${ping.py})`;
+    setPing(null);
+    void send(`${prompt}. Target: ${target}. Keep new content near that spot.`);
+  };
   const says = log.filter((l) => l.role === "claude").slice(-4);
   const empty = log.length === 0;
 
@@ -99,6 +136,8 @@ export default function App() {
             disabled={status !== "idle"}
             autoFocus
           />
+          <button type="button" className={`ping-btn ${ping ? "on" : ""}`} title="Ping: click a spot on the canvas and ask about it (⌘P)"
+            onClick={() => setPing((p) => (p ? null : { mode: "arm" }))} disabled={status !== "idle"}>⌖</button>
           <label className="toggle" title="Send a screenshot of the canvas so Claude can see what you drew">
             <input type="checkbox" checked={seeCanvas} onChange={(e) => setSeeCanvas(e.target.checked)} /> 👁
           </label>
@@ -106,6 +145,25 @@ export default function App() {
             ? <button type="submit" disabled={!prompt.trim()}>Go</button>
             : <button type="button" className="stop" onClick={stop}>Stop</button>}
         </form>
+        {ping?.mode === "arm" && status === "idle" && (
+          <div className="status glass arm"><span className="dot" /><span className="txt">Click a spot on the canvas to ask about it · Esc to cancel</span></div>
+        )}
+        {ping && status === "idle" && (
+          <div className="ping-capture" onClick={ping.mode === "arm" ? onPingClick : () => setPing(null)}>
+            {ping.mode === "wheel" && (
+              <div className="wheel" style={{ left: ping.sx, top: ping.sy }} onClick={(e) => e.stopPropagation()}>
+                <span className="center" />
+                {PING_OPTIONS.map((o, i) => {
+                  const a = (i / PING_OPTIONS.length) * Math.PI * 2 - Math.PI / 2;
+                  return (
+                    <button key={o.label} className="glass" style={{ left: Math.cos(a) * 84, top: Math.sin(a) * 84, animationDelay: `${i * 35}ms` }}
+                      onClick={() => firePing(o.prompt)}>{o.label}</button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
         {status !== "idle" && (
           <div className={`status glass ${status}`}>
             <span className="dot" />

@@ -62,3 +62,14 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
   .toggle:hover { background: rgba(255,255,255,.08); }
   .suggestions h1 { text-shadow: none; }
 }
+
+/* Ping wheel */
+.ping-btn { border: 0; background: transparent !important; color: var(--muted) !important; font-size: 19px; padding: 4px 8px !important; line-height: 1; }
+.ping-btn.on { color: var(--accent) !important; text-shadow: 0 0 10px rgba(217,119,87,.6); }
+.ping-capture { position: absolute; inset: 0; cursor: crosshair; z-index: 1001; }
+.status.arm .dot { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.wheel { position: absolute; width: 0; height: 0; }
+.wheel .center { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px rgba(217,119,87,.25), 0 0 20px rgba(217,119,87,.6); }
+.wheel button { position: absolute; transform: translate(-50%, -50%); padding: 8px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; animation: wheelpop .35s var(--ease) both; transition: transform .2s var(--ease), border-color .2s; }
+.wheel button:hover { transform: translate(-50%, -50%) scale(1.1); border-color: var(--accent); }
+@keyframes wheelpop { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
