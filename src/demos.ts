@@ -41,12 +41,18 @@ export const CURSOR_DEMO: CanvasOp[] = [
 
 export const STAGE_NAMES = ["Reading: explain the research paper", "Drawing: how the experiment ran", "Cursor: ping the flaw & ask why"];
 
+const interfacesSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'><rect width='400' height='200' rx='14' fill='#f6f7fb'/><g font-family='sans-serif' font-size='12' fill='#555' text-anchor='middle'><text x='100' y='22'>Separate chat panel</text><text x='300' y='22'>Inline explanation</text></g><rect x='30' y='35' width='90' height='140' rx='6' fill='#fff' stroke='#c9ccd6'/><g stroke='#d4d6de' stroke-width='4' stroke-linecap='round'><line x1='42' y1='55' x2='108' y2='55'/><line x1='42' y1='70' x2='100' y2='70'/><line x1='42' y1='100' x2='108' y2='100'/><line x1='42' y1='115' x2='95' y2='115'/><line x1='42' y1='145' x2='105' y2='145'/></g><line x1='42' y1='85' x2='108' y2='85' stroke='#f2b134' stroke-width='6' stroke-linecap='round'/><rect x='128' y='35' width='52' height='140' rx='6' fill='#eceef4' stroke='#c9ccd6'/><rect x='134' y='120' width='40' height='14' rx='7' fill='#9ca3af'/><rect x='134' y='140' width='40' height='14' rx='7' fill='#4f7df3'/><path d='M108,85 C120,85 120,127 134,127' fill='none' stroke='#d97757' stroke-width='2' stroke-dasharray='4 3'/><rect x='230' y='35' width='140' height='140' rx='6' fill='#fff' stroke='#c9ccd6'/><g stroke='#d4d6de' stroke-width='4' stroke-linecap='round'><line x1='242' y1='55' x2='355' y2='55'/><line x1='242' y1='70' x2='340' y2='70'/><line x1='242' y1='145' x2='350' y2='145'/><line x1='242' y1='160' x2='330' y2='160'/></g><line x1='242' y1='85' x2='330' y2='85' stroke='#f2b134' stroke-width='6' stroke-linecap='round'/><rect x='252' y='96' width='106' height='36' rx='8' fill='#dbe7ff' stroke='#4f7df3'/><path d='M262,96 l6,-8 l6,8' fill='#dbe7ff' stroke='#4f7df3'/><g stroke='#4f7df3' stroke-width='3' stroke-linecap='round'><line x1='262' y1='110' x2='340' y2='110'/><line x1='262' y1='121' x2='320' y2='121'/></g></svg>`;
+
+const peopleSvg = (() => { let g = ""; for (let i = 0; i < 24; i++) { const x = 18 + (i % 12) * 30, y = i < 12 ? 26 : 62; g += `<circle cx='${x}' cy='${y - 10}' r='6' fill='#4f7df3'/><path d='M${x - 10},${y + 10} a10,10 0 0 1 20,0 z' fill='#4f7df3'/>`; } return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 380 90'><rect width='380' height='90' rx='12' fill='#eef2ff'/>${g}</svg>`; })();
+
+const orderSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 200'><rect width='920' height='200' rx='14' fill='#f2fbf4'/><g font-family='sans-serif' font-size='14' fill='#333'><text x='20' y='40' font-weight='bold'>This study (fixed order)</text><text x='20' y='135' font-weight='bold'>Better (randomized)</text></g><g font-family='sans-serif' font-size='13' fill='#fff' text-anchor='middle'><rect x='230' y='22' width='150' height='34' rx='8' fill='#9ca3af'/><text x='305' y='44'>A · chat</text><rect x='410' y='22' width='150' height='34' rx='8' fill='#4f7df3'/><text x='485' y='44'>B · inline</text><rect x='590' y='22' width='150' height='34' rx='8' fill='#9ca3af'/><text x='665' y='44'>A · chat</text><rect x='770' y='22' width='130' height='34' rx='8' fill='#4f7df3'/><text x='835' y='44'>B · inline</text><rect x='230' y='117' width='150' height='34' rx='8' fill='#4f7df3'/><text x='305' y='139'>B · inline</text><rect x='410' y='117' width='150' height='34' rx='8' fill='#9ca3af'/><text x='485' y='139'>A · chat</text><rect x='590' y='117' width='150' height='34' rx='8' fill='#9ca3af'/><text x='665' y='139'>A · chat</text><rect x='770' y='117' width='130' height='34' rx='8' fill='#4f7df3'/><text x='835' y='139'>B · inline</text></g><text x='230' y='80' font-family='sans-serif' font-size='12' fill='#c0392b'>inline always second → practice + fatigue leak into the score</text><text x='230' y='175' font-family='sans-serif' font-size='12' fill='#2e9e5b'>order shuffled per person → the gap is about the help, not the order</text></svg>`;
+
 const figureSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><rect width='400' height='300' rx='14' fill='#f4f7f2'/><text x='200' y='30' text-anchor='middle' font-family='sans-serif' font-size='15' font-weight='bold' fill='#293e36'>Figure 1 · Comprehension score (0–100)</text><line x1='70' y1='250' x2='370' y2='250' stroke='#293e36' stroke-width='2'/><line x1='70' y1='50' x2='70' y2='250' stroke='#293e36' stroke-width='2'/><rect x='120' y='126' width='80' height='124' rx='4' fill='#9fb988'/><rect x='250' y='102' width='80' height='148' rx='4' fill='#4f7df3'/><g font-family='sans-serif' text-anchor='middle' fill='#293e36'><text x='160' y='116' font-size='18' font-weight='bold'>62</text><text x='290' y='92' font-size='18' font-weight='bold'>74</text><text x='160' y='272' font-size='13'>Separate chat</text><text x='290' y='272' font-size='13'>Inline help</text></g></svg>`;
 
 /** Stage 4: Marg reads the sample paper on the left and explains it. */
 const PAPER_DEMO_RAW: CanvasOp[] = [
   S("I read the paper on the left: the abstract, Figure 1, then the methods. Here's the gist."),
-  { op: "frame", id: "pp_f", x: 100, y: 1280, w: 1100, h: 720, name: "Paper: Reading with Local Explanations" },
+  { op: "frame", id: "pp_f", x: 100, y: 1280, w: 1100, h: 780, name: "Paper: Reading with Local Explanations" },
   { op: "text", id: "pp_t1", x: 140, y: 1310, text: "Reading with Local Explanations", size: "xl" },
   { op: "text", id: "pp_t2", x: 140, y: 1365, w: 560, size: "m", text: "A fictional study: do explanations placed beside the passage help readers understand without losing their place? (§1, page 1)" },
   W(300),
@@ -54,8 +60,9 @@ const PAPER_DEMO_RAW: CanvasOp[] = [
   { op: "shape", id: "pp_s1", kind: "rectangle", x: 140, y: 1470, w: 220, h: 90, label: "Separate chat panel", color: "grey", fill: "semi" },
   { op: "shape", id: "pp_s2", kind: "rectangle", x: 480, y: 1470, w: 220, h: 90, label: "Inline explanation", color: "blue", fill: "semi" },
   { op: "arrow", id: "pp_a1", from: "pp_s1", to: "pp_s2", label: "vs" },
+  { op: "svg", id: "pp_ill", x: 760, y: 1740, w: 400, h: 200, svg: interfacesSvg },
   { op: "note", id: "pp_n1", x: 140, y: 1600, text: "Context recovery cost: the effort to find your passage again after getting help. (§2)", color: "yellow" },
-  { op: "focus", ids: ["pp_t1", "pp_s1", "pp_s2", "pp_n1"] },
+  { op: "focus", ids: ["pp_t1", "pp_s1", "pp_s2", "pp_n1", "pp_ill"] },
   W(700),
   S("Figure 1 on page 2 is the headline result. Let me redraw it."),
   { op: "svg", id: "pp_fig", x: 760, y: 1310, w: 400, h: 300, svg: figureSvg },
@@ -80,6 +87,7 @@ export const EXPERIMENT_DEMO: CanvasOp[] = [
   { op: "frame", id: "ex_f", x: 1300, y: 100, w: 1000, h: 640, name: "The study design (§4, page 3)" },
   { op: "text", id: "ex_t1", x: 1340, y: 130, text: "How the experiment ran", size: "xl" },
   { op: "shape", id: "ex_s1", kind: "ellipse", x: 1340, y: 220, w: 200, h: 90, label: "24 participants", color: "blue", fill: "semi" },
+  { op: "svg", id: "ex_people", x: 1340, y: 320, w: 230, h: 55, svg: peopleSvg },
   { op: "shape", id: "ex_s2", kind: "rectangle", x: 1600, y: 220, w: 260, h: 90, label: "Passage A + separate chat", color: "grey", fill: "semi" },
   { op: "arrow", id: "ex_a1", from: "ex_s1", to: "ex_s2" },
   { op: "shape", id: "ex_s3", kind: "rectangle", x: 1920, y: 220, w: 260, h: 90, label: "Quiz 1 · 10 questions", color: "light-green", fill: "semi" },
@@ -104,8 +112,8 @@ export const EXPERIMENT_DEMO: CanvasOp[] = [
 
 /** Stage 3: what Marg draws after you ping the "fixed order" note and pick Explain. */
 export const CURSOR_PAPER_DEMO: CanvasOp[] = [
-  S("Pinged! Here's why that fixed order breaks the causal claim, and how §6 would fix it."),
-  { op: "frame", id: "fx_f", x: 1300, y: 800, w: 1000, h: 360, name: "Why it can't prove causality, and the fix (§5–6)" },
+  S("One more thing: why that fixed order breaks the causal claim, and how §6 would fix it."),
+  { op: "frame", id: "fx_f", x: 1300, y: 800, w: 1000, h: 580, name: "Why it can't prove causality, and the fix (§5–6)" },
   { op: "text", id: "fx_t", x: 1340, y: 830, w: 920, size: "m", text: "Inline help always came second, so any improvement could be practice, fatigue, or an easier passage. The paper's own fix:" },
   { op: "shape", id: "fx_1", kind: "rectangle", x: 1340, y: 960, w: 280, h: 90, label: "Randomize the order", color: "green", fill: "semi" },
   { op: "shape", id: "fx_2", kind: "rectangle", x: 1660, y: 960, w: 280, h: 90, label: "Counterbalance passages", color: "green", fill: "semi" },
@@ -113,9 +121,10 @@ export const CURSOR_PAPER_DEMO: CanvasOp[] = [
   { op: "shape", id: "fx_3", kind: "rectangle", x: 1980, y: 960, w: 280, h: 90, label: "Delayed recall + error bars", color: "green", fill: "semi" },
   { op: "arrow", id: "fx_a2", from: "fx_2", to: "fx_3" },
   { op: "arrow", id: "fx_a3", from: "ex_n1", to: "fx_f", color: "grey", dash: "dashed" },
+  { op: "svg", id: "fx_ill", x: 1340, y: 1080, w: 920, h: 200, svg: orderSvg },
   { op: "focus", ids: ["fx_f"] },
   W(900),
-  S("That's Marg: read the paper, draw the idea, and point at anything to dig in. Thanks for watching!"),
+  S("That's Marg: it reads the paper with you, draws the idea, and digs in wherever you ask. Thanks for watching!"),
   { op: "focus", ids: ["pp_f", "ex_f", "fx_f"] },
 ];
 

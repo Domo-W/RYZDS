@@ -211,18 +211,8 @@ export default function App() {
       await playOps(EXPERIMENT_DEMO);
       if (demoAbort.current) return;
       // Stage 3: ping the flaw and ask why.
-      setDemoStage(2); pushLog("user", "⌖ Ping the “fixed order” note → Explain");
-      skipFlag.current = false;
-      const target = ed.getShapePageBounds(applier.idFor("ex_n1"));
-      if (target) {
-        ed.zoomToBounds(target, { inset: 260, targetZoom: 1.2, animation: { duration: 800 } });
-        await skippableSleep(1000);
-        const scr = ed.pageToScreen({ x: target.midX, y: target.midY });
-        const crect = ed.getContainer().getBoundingClientRect();
-        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x - crect.left, sy: scr.y - crect.top, px: Math.round(target.midX), py: Math.round(target.midY), near: ["ex_n1"] });
-        await skippableSleep(2200);
-        setPing(null);
-      }
+      setDemoStage(2); pushLog("user", "Can this result prove causality?");
+      await typePrompt("Can this result actually prove causality?");
       if (!demoAbort.current) await playOps(CURSOR_PAPER_DEMO);
     } finally {
       setDemoStage(null);
