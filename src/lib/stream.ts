@@ -4,13 +4,14 @@ import type { CanvasApplier } from "../canvas/apply";
 export type StreamEvent =
   | { t: "text"; text: string }
   | { t: "thinking"; text: string }
+  | { t: "meta"; model: string; label: string }
   | { t: "error"; message: string }
   | { t: "done"; stop_reason?: string | null; usage?: Record<string, unknown> };
 
 export type HistoryMessage = { role: "user" | "assistant"; content: string };
 
 export async function streamCanvas(
-  body: { history: HistoryMessage[]; prompt: string; canvas: unknown; image: string | null },
+  body: { history: HistoryMessage[]; prompt: string; canvas: unknown; image: string | null; paper?: { name: string; data: string } | null },
   onEvent: (ev: StreamEvent) => void,
   signal: AbortSignal,
 ) {
@@ -77,6 +78,9 @@ export class OpQueue {
       this.running = null;
     })();
   }
+
+  /** Drop everything not yet applied (the op in flight still finishes). */
+  cancel() { this.q.length = 0; this.buf = ""; }
 
   async drain() { while (this.running) await this.running; }
 }

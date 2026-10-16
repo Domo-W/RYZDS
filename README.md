@@ -1,4 +1,4 @@
-# VizAI — an AI that explains on a canvas, not in a chat box
+# Marg (VizAI) — an AI that explains on a canvas, not in a chat box
 
 Most chatbots are stuck in a text thread. VizAI gives Claude an infinite whiteboard instead.
 You ask a question; Claude **draws the answer live** — titles, diagrams, arrows, sticky-note
@@ -8,7 +8,7 @@ camera** to walk you through it, like a person explaining at a whiteboard.
 ## How it works
 
 ```
-you type a prompt ──▶ /api/canvas (Express) ──▶ Claude (claude-opus-5-5, streaming)
+you type a prompt ──▶ /api/canvas (Express) ──▶ Claude (Sonnet 5.5 / Haiku 5.5, streaming)
                                                       │
                  tldraw canvas ◀── ops applied live ◀──┘  NDJSON: one canvas operation per line
 ```
@@ -34,10 +34,22 @@ npm run dev              # web on http://localhost:5173, API on :8787
 
 Without an API key the app runs a built-in demo script so the UI can still be shown off.
 
-Optional env: `VIZAI_MODEL` (default `claude-opus-5-5`; `claude-sonnet-5-5` is faster/cheaper),
-`VIZAI_EFFORT` (`low` | `medium` | `high`), `VIZAI_PORT`.
+**Model routing:** short, simple prompts go to `claude-haiku-5-5` (fast, cheap); explanations,
+comparisons, plans, and anything with a canvas screenshot go to `claude-sonnet-5-5`. Override with
+`VIZAI_MODEL`, `VIZAI_FAST_MODEL`, `VIZAI_EFFORT`, `VIZAI_FAST_EFFORT`, `VIZAI_PORT` in `.env`.
 
-Production: `npm run build && npm start` serves the built app and API from one process.
+Production (any Node host): `npm run build && npm start` serves the built app and API from one process.
+
+### Deploy to Vercel
+
+The repo is Vercel-ready: `api/canvas.ts` and `api/health.ts` are serverless functions (streaming),
+the Vite build is the static site.
+
+1. Import the GitHub repo at https://vercel.com/new (framework preset: Vite — auto-detected).
+2. Add the environment variable `ANTHROPIC_API_KEY` in Project Settings → Environment Variables.
+3. Deploy. Later pushes to `main` redeploy automatically.
+
+Or from the CLI: `npx vercel` then `npx vercel --prod` (set the env var with `vercel env add ANTHROPIC_API_KEY`).
 
 ## Project layout
 
@@ -55,3 +67,10 @@ Production: `npm run build && npm start` serves the built app and API from one p
 - "Draw how HTTPS works, step by step"
 - Draw a rough sketch yourself, then: "label what I drew and fix the layout"
 - "Zoom in on the second step and expand it"
+
+## Paper-reading prototype
+
+[Margin](prototypes/paper-companion/README.md) is an independent cursor-first PDF
+companion: full-paper AI context, a customizable four-action wheel, cursor-side
+explanations and right-hand chat. It runs separately on port 5174 with a per-tab
+OpenAI API key; the VizAI canvas setup above remains unchanged.

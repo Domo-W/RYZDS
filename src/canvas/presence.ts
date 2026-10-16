@@ -17,7 +17,7 @@ export class ClaudePresence {
         id: this.id,
         currentPageId: this.editor.getCurrentPageId(),
         userId: "user:claude" as TLInstancePresence["userId"],
-        userName: "Claude",
+        userName: "Marg 🙂",
         color: "#D97757",
         cursor: { x: this.pos.x, y: this.pos.y, type: "default", rotation: 0 },
         chatMessage: "",
@@ -31,6 +31,7 @@ export class ClaudePresence {
   /** Glide the cursor to a page-space point. */
   moveTo(x: number, y: number, duration = 350) {
     cancelAnimationFrame(this.raf);
+    this.put({ userName: "Marg ✍️" });
     const from = { ...this.pos };
     const start = performance.now();
     const step = (now: number) => {
@@ -43,10 +44,22 @@ export class ClaudePresence {
     this.raf = requestAnimationFrame(step);
   }
 
-  say(text: string) {
-    this.put({ chatMessage: text });
+  /** Picks a face for the cursor from the mood or the words. */
+  static moodFor(text: string, mood?: string) {
+    if (mood) return mood;
+    const t = text.toLowerCase();
+    if (/meme|basically|😂|lol/.test(t)) return "😂";
+    if (/catch|wait|confound|can't|cannot|problem|flaw|breaks/.test(t)) return "😮";
+    if (/thanks|bottom line|that's (marg|https)|great|done|!$/.test(t)) return "😊";
+    if (/let me|reading|looking|check|now the|here's/.test(t)) return "🤔";
+    if (/\?$/.test(t)) return "🧐";
+    return "🙂";
+  }
+
+  say(text: string, mood?: string) {
+    this.put({ userName: `Marg ${ClaudePresence.moodFor(text, mood)}` });
     if (this.sayTimer) clearTimeout(this.sayTimer);
-    this.sayTimer = setTimeout(() => this.put({ chatMessage: "" }), 7000);
+    this.sayTimer = setTimeout(() => this.put({ chatMessage: "", userName: "Marg 🙂" }), 7000);
   }
 
   hide() {

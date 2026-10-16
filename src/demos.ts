@@ -1,0 +1,241 @@
+import type { CanvasOp } from "./canvas/ops";
+
+export type Demo = { title: string; ops: CanvasOp[] };
+
+const S = (text: string): CanvasOp => ({ op: "say", text });
+const W = (ms: number): CanvasOp => ({ op: "wait", ms });
+
+function networkSvg() {
+  const inp = [80, 150, 220], hid = [50, 117, 183, 250], out = [110, 190];
+  let lines = "";
+  for (const y1 of inp) for (const y2 of hid) lines += `<line x1='60' y1='${y1}' x2='220' y2='${y2}'/>`;
+  for (const y1 of hid) for (const y2 of out) lines += `<line x1='220' y1='${y1}' x2='380' y2='${y2}'/>`;
+  const circ = (x: number, ys: number[], fill: string) => ys.map((y) => `<g filter='url(#ns)'><circle cx='${x}' cy='${y}' r='16' fill='${fill}'/><circle cx='${x}' cy='${y}' r='16' fill='url(#n1)'/></g>`).join("");
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 300'><defs><radialGradient id='n1' cx='.35' cy='.3'><stop offset='0' stop-color='#fff' stop-opacity='.9'/><stop offset='1' stop-color='#000' stop-opacity='.15'/></radialGradient><filter id='ns' x='-20%' y='-20%' width='140%' height='140%'><feDropShadow dx='0' dy='3' stdDeviation='3' flood-color='#000' flood-opacity='.25'/></filter></defs><g stroke='#b8bdd1' stroke-width='1.5'>${lines}</g><circle r='5' fill='#ff5c7a'><animateMotion dur='2s' repeatCount='indefinite' path='M60,150 L220,117 L380,110'/></circle><circle r='5' fill='#ff5c7a'><animateMotion dur='2s' begin='0.7s' repeatCount='indefinite' path='M60,220 L220,183 L380,190'/></circle>${circ(60, inp, "#4f7df3")}${circ(220, hid, "#8b5cf6")}${circ(380, out, "#f59e0b")}<g font-family='sans-serif' font-size='14' fill='#555' text-anchor='middle'><text x='60' y='32'>Input</text><text x='220' y='22'>Hidden</text><text x='380' y='32'>Output</text></g></svg>`;
+}
+
+const lossSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><polyline points='40,30 40,170 260,170' fill='none' stroke='#999' stroke-width='2'/><path d='M45,45 C90,60 110,120 150,140 S230,160 255,165' fill='none' stroke='#d97757' stroke-width='5' stroke-linecap='round'/><text x='150' y='192' text-anchor='middle' font-family='sans-serif' font-size='13' fill='#555'>training steps →</text><text x='22' y='100' transform='rotate(-90 22,100)' text-anchor='middle' font-family='sans-serif' font-size='13' fill='#555'>loss</text></svg>`;
+
+const lockSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 160'><path d='M70,75 V55 a30,30 0 0 1 60,0 V75' fill='none' stroke='#555' stroke-width='8' stroke-linecap='round'/><rect x='50' y='75' width='100' height='65' rx='12' fill='#f2b134'/><circle cx='100' cy='103' r='8' fill='#333'/><rect x='97' y='103' width='6' height='20' rx='3' fill='#333'/></svg>`;
+
+function shift(ops: CanvasOp[], dx: number, dy = 0): CanvasOp[] {
+  return ops.map((o) => ("x" in o && typeof o.x === "number" ? ({ ...o, x: o.x + dx, y: ("y" in o && typeof o.y === "number" ? o.y + dy : undefined) } as CanvasOp) : o));
+}
+
+/** Stage 3: what happens after you ping the "Backpropagate" box and pick Explain. */
+export const CURSOR_DEMO: CanvasOp[] = [
+  S("Pinged! Let me zoom in on backpropagation right where you pointed."),
+  { op: "frame", id: "bp_f", x: 640, y: 860, w: 560, h: 330, name: "Backpropagation, up close" },
+  { op: "text", id: "bp_t", x: 670, y: 890, w: 500, size: "m", text: "Backprop asks every weight: how much did YOU contribute to the error? The chain rule passes blame backwards, layer by layer." },
+  { op: "shape", id: "bp_1", kind: "ellipse", x: 670, y: 1040, w: 140, h: 70, label: "Output error", color: "red", fill: "semi" },
+  { op: "shape", id: "bp_2", kind: "ellipse", x: 850, y: 1040, w: 140, h: 70, label: "Hidden blame", color: "violet", fill: "semi" },
+  { op: "arrow", id: "bp_a1", from: "bp_1", to: "bp_2", label: "chain rule" },
+  { op: "shape", id: "bp_3", kind: "ellipse", x: 1030, y: 1040, w: 140, h: 70, label: "Weight nudges", color: "green", fill: "semi" },
+  { op: "arrow", id: "bp_a2", from: "bp_2", to: "bp_3" },
+  { op: "arrow", id: "bp_a3", from: "nn_s3", to: "bp_f", color: "grey", dash: "dashed" },
+  { op: "focus", ids: ["bp_f"] },
+  W(900),
+  S("That's the cursor: point at anything on the canvas and just ask. Thanks for watching!"),
+  { op: "focus", ids: ["nn_f", "bp_f"] },
+];
+
+export const STAGE_NAMES = ["Reading: explain the research paper", "Drawing: how the experiment ran", "Cursor: ping the flaw & ask why"];
+
+const interfacesSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'><defs><filter id='s2' x='-20%' y='-20%' width='140%' height='140%'><feDropShadow dx='0' dy='5' stdDeviation='5' flood-color='#000' flood-opacity='.16'/></filter><linearGradient id='bg2' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#f8f9ff'/><stop offset='1' stop-color='#eceefb'/></linearGradient></defs><g filter='url(#s2)'><g font-family='sans-serif' font-size='12' fill='#555' text-anchor='middle'><text x='100' y='22'>Separate chat panel</text><text x='300' y='22'>Inline explanation</text></g><rect x='30' y='35' width='90' height='140' rx='6' fill='#fff' stroke='#c9ccd6'/><g stroke='#d4d6de' stroke-width='4' stroke-linecap='round'><line x1='42' y1='55' x2='108' y2='55'/><line x1='42' y1='70' x2='100' y2='70'/><line x1='42' y1='100' x2='108' y2='100'/><line x1='42' y1='115' x2='95' y2='115'/><line x1='42' y1='145' x2='105' y2='145'/></g><line x1='42' y1='85' x2='108' y2='85' stroke='#f2b134' stroke-width='6' stroke-linecap='round'/><rect x='128' y='35' width='52' height='140' rx='6' fill='#eceef4' stroke='#c9ccd6'/><rect x='134' y='120' width='40' height='14' rx='7' fill='#9ca3af'/><rect x='134' y='140' width='40' height='14' rx='7' fill='#4f7df3'/><path d='M108,85 C120,85 120,127 134,127' fill='none' stroke='#d97757' stroke-width='2' stroke-dasharray='4 3'/><rect x='230' y='35' width='140' height='140' rx='6' fill='#fff' stroke='#c9ccd6'/><g stroke='#d4d6de' stroke-width='4' stroke-linecap='round'><line x1='242' y1='55' x2='355' y2='55'/><line x1='242' y1='70' x2='340' y2='70'/><line x1='242' y1='145' x2='350' y2='145'/><line x1='242' y1='160' x2='330' y2='160'/></g><line x1='242' y1='85' x2='330' y2='85' stroke='#f2b134' stroke-width='6' stroke-linecap='round'><animate attributeName='stroke-opacity' values='1;.4;1' dur='1.6s' repeatCount='indefinite'/></line><rect x='252' y='96' width='106' height='36' rx='8' fill='#dbe7ff' stroke='#4f7df3'><animateTransform attributeName='transform' type='scale' values='0.9;1.03;1' dur='.6s' fill='freeze' additive='sum'/></rect><path d='M262,96 l6,-8 l6,8' fill='#dbe7ff' stroke='#4f7df3'/><g stroke='#4f7df3' stroke-width='3' stroke-linecap='round'><line x1='262' y1='110' x2='340' y2='110'/><line x1='262' y1='121' x2='320' y2='121'/></g></g></svg>`;
+
+const peopleSvg = (() => { let g = "<defs><radialGradient id='pg' cx='.35' cy='.3'><stop offset='0' stop-color='#9bb8ff'/><stop offset='1' stop-color='#3b63d6'/></radialGradient></defs>"; for (let i = 0; i < 24; i++) { const x = 18 + (i % 12) * 30, y = i < 12 ? 26 : 62; g += `<g opacity='0'><animate attributeName='opacity' from='0' to='1' begin='${(i * 0.06).toFixed(2)}s' dur='0.3s' fill='freeze'/><circle cx='${x}' cy='${y - 10}' r='6' fill='url(#pg)'/><path d='M${x - 10},${y + 10} a10,10 0 0 1 20,0 z' fill='url(#pg)'/></g>`; } return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 380 90'>${g}</svg>`; })();
+
+const orderSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 200'><defs><filter id='s3' x='-10%' y='-20%' width='120%' height='140%'><feDropShadow dx='0' dy='5' stdDeviation='5' flood-color='#1b1b3a' flood-opacity='.16'/></filter></defs><g font-family='-apple-system, Helvetica, Arial, sans-serif'><text x='20' y='40' font-size='11' font-weight='700' letter-spacing='1.6' fill='#8a8f9c'>THIS STUDY</text><text x='20' y='64' font-size='16' font-weight='700' fill='#c0392b'>Fixed order</text><text x='20' y='130' font-size='11' font-weight='700' letter-spacing='1.6' fill='#8a8f9c'>BETTER</text><text x='20' y='154' font-size='16' font-weight='700' fill='#2e9e5b'>Randomized</text></g><g filter='url(#s3)'><g><rect x='250' y='44' width='150' height='44' rx='12' fill='#9aa3b2'/><text x='325' y='72' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>A · chat</text></g><g><rect x='415' y='44' width='150' height='44' rx='12' fill='#3b63d6'/><text x='490' y='72' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>B · inline</text></g><g><rect x='580' y='44' width='150' height='44' rx='12' fill='#9aa3b2'/><text x='655' y='72' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>A · chat</text></g><g><rect x='745' y='44' width='150' height='44' rx='12' fill='#3b63d6'/><text x='820' y='72' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>B · inline</text></g></g><text x='250' y='112' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='13' fill='#c0392b'>inline always second → practice + fatigue leak into the score</text><g filter='url(#s3)'><g><animateTransform attributeName='transform' type='translate' values='0 0;165 0;165 0;0 0;0 0' keyTimes='0;0.3;0.5;0.8;1' dur='5s' repeatCount='indefinite'/><rect x='250' y='134' width='150' height='44' rx='12' fill='#3b63d6'/><text x='325' y='162' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>B · inline</text></g><g><animateTransform attributeName='transform' type='translate' values='0 0;-165 0;-165 0;0 0;0 0' keyTimes='0;0.3;0.5;0.8;1' dur='5s' repeatCount='indefinite'/><rect x='415' y='134' width='150' height='44' rx='12' fill='#9aa3b2'/><text x='490' y='162' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>A · chat</text></g><g><rect x='580' y='134' width='150' height='44' rx='12' fill='#9aa3b2'/><text x='655' y='162' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>A · chat</text></g><g><rect x='745' y='134' width='150' height='44' rx='12' fill='#3b63d6'/><text x='820' y='162' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#fff'>B · inline</text></g></g><text x='250' y='196' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='13' fill='#2e9e5b'>order shuffled per person → the gap is about the help, not the order</text></svg>`;
+
+const drakeMeme = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 300'><defs><filter id='ms' x='-10%' y='-10%' width='120%' height='130%'><feDropShadow dx='0' dy='8' stdDeviation='8' flood-color='#000' flood-opacity='.22'/></filter></defs><g filter='url(#ms)'><rect x='10' y='10' width='400' height='280' rx='18' fill='#fff'/></g><rect x='10' y='10' width='150' height='140' rx='18' fill='#ffd7c2'/><rect x='10' y='150' width='150' height='140' rx='18' fill='#c9f2d2'/><text x='85' y='95' text-anchor='middle' font-size='64'>🙅‍♂️</text><text x='85' y='235' text-anchor='middle' font-size='64'>😏👉</text><g font-family='Impact, Arial Black, sans-serif' font-size='20' fill='#222'><text x='285' y='70' text-anchor='middle'>Scroll away to a chat</text><text x='285' y='98' text-anchor='middle'>panel, lose your place</text><text x='285' y='210' text-anchor='middle'>Explanation right</text><text x='285' y='238' text-anchor='middle'>next to the sentence</text></g><line x1='10' y1='150' x2='410' y2='150' stroke='#ddd'/></svg>`;
+
+const brainMeme = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 300'><defs><filter id='bs' x='-10%' y='-10%' width='120%' height='130%'><feDropShadow dx='0' dy='8' stdDeviation='8' flood-color='#000' flood-opacity='.22'/></filter></defs><g filter='url(#bs)'><rect x='10' y='10' width='500' height='280' rx='18' fill='#fff'/></g><g font-size='54' text-anchor='middle'><text x='70' y='78'>🧠</text><text x='70' y='168'>🤯</text><text x='70' y='258'>🌌🧠</text></g><g font-family='Impact, Arial Black, sans-serif' font-size='19' fill='#222'><text x='130' y='58'>"74 &gt; 62, inline help wins,</text><text x='130' y='84'>ship it" (fixed order, n=24)</text><text x='130' y='148'>"wait… everyone did inline</text><text x='130' y='174'>second. practice effect?"</text><text x='130' y='238'>randomize, counterbalance,</text><text x='130' y='264'>report error bars</text></g><g stroke='#e5e5e5'><line x1='10' y1='100' x2='510' y2='100'/><line x1='10' y1='190' x2='510' y2='190'/></g></svg>`;
+
+/** A looping animated clip (SMIL) explaining what a local explanation is. Plays like a video inside the canvas. */
+const explainerClip = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360'><defs><linearGradient id='cbg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#0f1222'/><stop offset='1' stop-color='#1d2140'/></linearGradient><filter id='cs' x='-10%' y='-10%' width='120%' height='130%'><feDropShadow dx='0' dy='8' stdDeviation='8' flood-color='#000' flood-opacity='.45'/></filter></defs><rect width='640' height='360' rx='22' fill='url(#cbg)'/><text x='320' y='40' text-anchor='middle' font-family='sans-serif' font-size='20' font-weight='700' fill='#fff'>What is a “local explanation”?</text><text x='120' y='78' text-anchor='middle' font-family='sans-serif' font-size='13' fill='#9aa3c7'>Separate chat panel</text><text x='470' y='78' text-anchor='middle' font-family='sans-serif' font-size='13' fill='#9aa3c7'>Inline (local) explanation</text><g filter='url(#cs)'><rect x='40' y='92' width='160' height='230' rx='10' fill='#fff'/><rect x='214' y='92' width='80' height='230' rx='10' fill='#262b4a'/></g><g stroke='#d7dbe6' stroke-width='5' stroke-linecap='round'><line x1='56' y1='120' x2='180' y2='120'/><line x1='56' y1='142' x2='170' y2='142'/><line x1='56' y1='186' x2='182' y2='186'/><line x1='56' y1='208' x2='160' y2='208'/><line x1='56' y1='252' x2='178' y2='252'/><line x1='56' y1='274' x2='150' y2='274'/></g><line x1='56' y1='164' x2='176' y2='164' stroke='#f2b134' stroke-width='8' stroke-linecap='round'/><circle r='9' fill='#ff5c7a' stroke='#fff' stroke-width='3'><animateMotion dur='4s' repeatCount='indefinite' path='M116,164 L254,300 L254,300 L116,164 L116,164' keyPoints='0;0.45;0.55;1;1' keyTimes='0;0.4;0.5;0.9;1' calcMode='linear'/></circle><g fill='#5a63a6'><rect x='224' y='280' width='60' height='12' rx='6'/><rect x='224' y='298' width='60' height='12' rx='6'><animate attributeName='fill' values='#5a63a6;#7f8cff;#5a63a6' dur='4s' repeatCount='indefinite'/></rect></g><text x='170' y='342' text-anchor='middle' font-family='sans-serif' font-size='12' fill='#ff5c7a'>eyes leave the text → context recovery cost</text><g filter='url(#cs)'><rect x='370' y='92' width='230' height='230' rx='10' fill='#fff'/></g><g stroke='#d7dbe6' stroke-width='5' stroke-linecap='round'><line x1='386' y1='120' x2='580' y2='120'/><line x1='386' y1='142' x2='560' y2='142'/><line x1='386' y1='252' x2='575' y2='252'/><line x1='386' y1='274' x2='540' y2='274'/><line x1='386' y1='296' x2='560' y2='296'/></g><line x1='386' y1='164' x2='540' y2='164' stroke='#f2b134' stroke-width='8' stroke-linecap='round'/><g opacity='0'><animate attributeName='opacity' values='0;0;1;1;0' keyTimes='0;0.25;0.4;0.85;1' dur='4s' repeatCount='indefinite'/><rect x='396' y='178' width='170' height='56' rx='10' fill='#e8ecff' stroke='#5b7cff' stroke-width='2'><animate attributeName='height' values='0;0;56;56;56' keyTimes='0;0.25;0.4;0.85;1' dur='4s' repeatCount='indefinite'/></rect><path d='M410,178 l7,-9 l7,9' fill='#e8ecff' stroke='#5b7cff' stroke-width='2'/><g stroke='#5b7cff' stroke-width='4' stroke-linecap='round'><line x1='408' y1='198' x2='540' y2='198'/><line x1='408' y1='214' x2='500' y2='214'/></g></g><circle cx='460' cy='164' r='9' fill='#3ddc97' stroke='#fff' stroke-width='3'><animate attributeName='cy' values='164;164;196;196;164' keyTimes='0;0.25;0.45;0.85;1' dur='4s' repeatCount='indefinite'/></circle><text x='485' y='342' text-anchor='middle' font-family='sans-serif' font-size='12' fill='#3ddc97'>help appears beside the sentence → stay in place</text><circle cx='600' cy='40' r='6' fill='#ff3b3b'><animate attributeName='opacity' values='1;0.2;1' dur='1.2s' repeatCount='indefinite'/></circle><text x='612' y='44' font-family='sans-serif' font-size='11' fill='#fff' text-anchor='start'>REC</text></svg>`;
+
+const sparkleSvg = (() => { let g = ""; for (let i = 0; i < 18; i++) { const x = 30 + ((i * 97) % 400), y = 30 + ((i * 61) % 240), d = (0.8 + (i % 5) * 0.3).toFixed(1), b = ((i % 7) * 0.25).toFixed(2); g += `<g transform='translate(${x} ${y})' opacity='0'><animate attributeName='opacity' values='0;1;0' dur='${d}s' begin='${b}s' repeatCount='indefinite'/><path d='M0,-12 L3,-3 L12,0 L3,3 L0,12 L-3,3 L-12,0 L-3,-3 Z' fill='${i % 2 ? "#f2b134" : "#d97757"}'><animateTransform attributeName='transform' type='rotate' from='0' to='180' dur='${d}s' begin='${b}s' repeatCount='indefinite'/></path></g>`; } return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 300'>${g}<text x='230' y='160' text-anchor='middle' font-family='sans-serif' font-size='34' font-weight='800' fill='#d97757'>That's Marg ✨</text><text x='230' y='196' text-anchor='middle' font-family='sans-serif' font-size='15' fill='#555'>read · draw · explain · dig in</text></svg>`; })();
+
+const figureSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><defs><linearGradient id='g1' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#cbd5e1'/><stop offset='1' stop-color='#94a3b8'/></linearGradient><linearGradient id='g2' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#7ea2ff'/><stop offset='1' stop-color='#3b63d6'/></linearGradient><filter id='sh' x='-20%' y='-20%' width='140%' height='140%'><feDropShadow dx='0' dy='6' stdDeviation='6' flood-color='#1b1b3a' flood-opacity='.16'/></filter></defs><text x='24' y='30' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='11' font-weight='700' letter-spacing='1.6' fill='#8a8f9c'>FIGURE 1 · PAGE 2</text><text x='24' y='54' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='17' font-weight='700' fill='#1f2230'>Comprehension score (0–100)</text><g stroke='#e5e7ee' stroke-width='1'><line x1='24' y1='250' x2='376' y2='250'/><line x1='24' y1='200' x2='376' y2='200'/><line x1='24' y1='150' x2='376' y2='150'/><line x1='24' y1='100' x2='376' y2='100'/></g><g font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='10' fill='#a0a4b0'><text x='376' y='96' text-anchor='end'>75</text><text x='376' y='146' text-anchor='end'>50</text><text x='376' y='196' text-anchor='end'>25</text></g><g filter='url(#sh)'><rect x='100' width='80' rx='4' fill='url(#g1)' y='126' height='124'><animate attributeName='y' from='250' to='126' dur='1.1s' fill='freeze'/><animate attributeName='height' from='0' to='124' dur='1.1s' fill='freeze'/></rect><polygon points='100,126 118,112 198,112 180,126' fill='#e2e8f0'><animateTransform attributeName='transform' type='translate' from='0 124' to='0 0' dur='1.1s' fill='freeze'/></polygon><polygon points='180,126 198,112 198,236 180,250' fill='#64748b'><animate attributeName='opacity' from='0' to='1' dur='1.1s' fill='freeze'/></polygon></g><g filter='url(#sh)'><rect x='230' width='80' rx='4' fill='url(#g2)' y='102' height='148'><animate attributeName='y' from='250' to='102' dur='1.4s' fill='freeze'/><animate attributeName='height' from='0' to='148' dur='1.4s' fill='freeze'/></rect><polygon points='230,102 248,88 328,88 310,102' fill='#c7d6ff'><animateTransform attributeName='transform' type='translate' from='0 148' to='0 0' dur='1.4s' fill='freeze'/></polygon><polygon points='310,102 328,88 328,236 310,250' fill='#2c4fb5'><animate attributeName='opacity' from='0' to='1' dur='1.4s' fill='freeze'/></polygon></g><g font-family='-apple-system, Helvetica, Arial, sans-serif' text-anchor='middle'><text x='140' y='160' font-size='26' font-weight='800' fill='#fff'>62</text><text x='270' y='150' font-size='26' font-weight='800' fill='#fff'>74</text><text x='140' y='274' font-size='13' fill='#475569'>Separate chat</text><text x='270' y='274' font-size='13' font-weight='700' fill='#2c4fb5'>Inline help</text></g><rect x='318' y='60' width='58' height='22' rx='11' fill='#e8f5ee'/><text x='347' y='75' text-anchor='middle' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#2e9e5b'>+12 pts</text></svg>`;
+
+/** Stage 4: Marg reads the sample paper on the left and explains it. */
+const PAPER_DEMO_RAW: CanvasOp[] = [
+  { op: "say", text: "I read the paper on the left: the abstract, Figure 1, then the methods. Here's the gist.", mood: "🤓" },
+  { op: "frame", id: "pp_f", x: 100, y: 1280, w: 1180, h: 1240, name: "Paper: Reading with Local Explanations" },
+  { op: "text", id: "pp_t1", x: 140, y: 1310, text: "Reading with Local Explanations", size: "xl" },
+  { op: "text", id: "pp_t2", x: 140, y: 1370, w: 560, size: "m", text: "A fictional study: do explanations placed beside the passage help readers understand without losing their place? (§1, page 1)" },
+  W(300),
+  S("The core comparison: a separate chat panel versus inline help right next to the text."),
+  { op: "shape", id: "pp_s1", kind: "rectangle", x: 140, y: 1480, w: 220, h: 90, label: "Separate chat panel", color: "grey", fill: "semi" },
+  { op: "shape", id: "pp_s2", kind: "rectangle", x: 480, y: 1480, w: 220, h: 90, label: "Inline explanation", color: "blue", fill: "semi" },
+  { op: "arrow", id: "pp_a1", from: "pp_s1", to: "pp_s2", label: "vs" },
+  { op: "svg", id: "pp_ill", x: 780, y: 1780, w: 400, h: 200, svg: interfacesSvg },
+  { op: "note", id: "pp_n1", x: 140, y: 1610, text: "Context recovery cost: the effort to find your passage again after getting help. (§2)", color: "yellow" },
+  { op: "focus", ids: ["pp_t1", "pp_s1", "pp_s2", "pp_n1", "pp_ill"] },
+  W(500),
+  { op: "say", text: "Here's a quick clip of the idea in motion.", mood: "🎬" },
+  { op: "svg", id: "pp_clip", x: 140, y: 2060, w: 560, h: 315, svg: explainerClip },
+  { op: "focus", ids: ["pp_clip"], zoom: 1.2 },
+  W(4500),
+  { op: "say", text: "Or, in meme form:", mood: "😂" },
+  { op: "image", id: "pp_meme", x: 760, y: 2060, w: 420, h: 420, url: "https://i.imgflip.com/30b1gx.jpg" },
+  { op: "text", id: "pp_meme_t1", x: 980, y: 2105, w: 190, size: "m", font: "sans", text: "Scrolling off to a chat panel and losing your place" },
+  { op: "text", id: "pp_meme_t2", x: 980, y: 2320, w: 190, size: "m", font: "sans", text: "The explanation right next to the sentence" },
+  { op: "focus", ids: ["pp_meme"], zoom: 1.1 },
+  W(1400),
+  S("Figure 1 on page 2 is the headline result. Let me redraw it."),
+  { op: "svg", id: "pp_fig", x: 780, y: 1310, w: 400, h: 300, svg: figureSvg },
+  { op: "text", id: "pp_t3", x: 780, y: 1630, w: 400, size: "s", text: "Figure 1 (p.2): 74 vs 62 on a 100-point quiz — 12 points higher with inline help. No error bars, no significance tests." },
+  { op: "focus", ids: ["pp_fig", "pp_t3"] },
+  W(700),
+  S("Now the methods on page 3, which decide how much to trust that chart."),
+  { op: "shape", id: "pp_s3", kind: "rectangle", x: 400, y: 1620, w: 340, h: 70, label: "24 participants · fixed order · not randomized", color: "light-red", fill: "semi" },
+  { op: "shape", id: "pp_s4", kind: "rectangle", x: 400, y: 1720, w: 340, h: 70, label: "Practice / fatigue confound → no causal claim", color: "red", fill: "semi" },
+  { op: "arrow", id: "pp_a2", from: "pp_s3", to: "pp_s4" },
+  { op: "note", id: "pp_n2", x: 140, y: 1840, text: "Next experiment (§6): randomize order, counterbalance passages, measure delayed recall.", color: "light-green" },
+  { op: "focus", ids: ["pp_s3", "pp_s4", "pp_n2"] },
+  W(600),
+  S("Bottom line: a promising pattern, but this design can't prove inline help causes better understanding."),
+  { op: "focus", ids: ["pp_f"] },
+];
+export const PAPER_DEMO: CanvasOp[] = shift(PAPER_DEMO_RAW, 0, -1180);
+
+/** Stage 2: the study design from §4 (page 3), drawn as a flow to the right of the summary. */
+export const EXPERIMENT_DEMO: CanvasOp[] = [
+  S("Let me draw how the experiment actually ran, so you can see where the problem hides."),
+  { op: "frame", id: "ex_f", x: 1300, y: 100, w: 1000, h: 640, name: "The study design (§4, page 3)" },
+  { op: "text", id: "ex_t1", x: 1340, y: 130, text: "How the experiment ran", size: "xl" },
+  { op: "shape", id: "ex_s1", kind: "ellipse", x: 1340, y: 220, w: 200, h: 90, label: "24 participants", color: "blue", fill: "semi" },
+  { op: "svg", id: "ex_people", x: 1340, y: 320, w: 230, h: 55, svg: peopleSvg },
+  { op: "shape", id: "ex_s2", kind: "rectangle", x: 1600, y: 220, w: 260, h: 90, label: "Passage A + separate chat", color: "grey", fill: "semi" },
+  { op: "arrow", id: "ex_a1", from: "ex_s1", to: "ex_s2" },
+  { op: "shape", id: "ex_s3", kind: "rectangle", x: 1920, y: 220, w: 260, h: 90, label: "Quiz 1 · 10 questions", color: "light-green", fill: "semi" },
+  { op: "arrow", id: "ex_a2", from: "ex_s2", to: "ex_s3" },
+  W(300),
+  S("Then everyone did the second passage with inline help. Same order for all 24 people."),
+  { op: "shape", id: "ex_s4", kind: "rectangle", x: 1600, y: 380, w: 260, h: 90, label: "Passage B + inline help", color: "blue", fill: "semi" },
+  { op: "arrow", id: "ex_a3", from: "ex_s3", to: "ex_s4", label: "always this order" },
+  { op: "shape", id: "ex_s5", kind: "rectangle", x: 1920, y: 380, w: 260, h: 90, label: "Quiz 2 · 10 questions", color: "light-green", fill: "semi" },
+  { op: "arrow", id: "ex_a4", from: "ex_s4", to: "ex_s5" },
+  { op: "focus", ids: ["ex_s1", "ex_s2", "ex_s3", "ex_s4", "ex_s5"] },
+  W(700),
+  { op: "say", text: "That fixed order is the catch: practice and fatigue get mixed into the 12-point gap.", mood: "😮" },
+  { op: "note", id: "ex_n1", x: 1340, y: 400, text: "Fixed order = practice & fatigue effects are mixed into the result. Not randomized. (§5)", color: "light-red" },
+  { op: "shape", id: "ex_s6", kind: "rectangle", x: 1600, y: 560, w: 580, h: 80, label: "Result: 62 → 74, but no randomization, no error bars", color: "orange", fill: "semi" },
+  { op: "arrow", id: "ex_a5", from: "ex_s5", to: "ex_s6" },
+  { op: "arrow", id: "ex_a6", from: "ex_n1", to: "ex_s6", color: "red", dash: "dashed" },
+  { op: "focus", ids: ["ex_f"] },
+  W(500),
+  S("So the chart is real, but the design can't tell us what caused the jump."),
+];
+
+/** Stage 3: what Marg draws after you ping the "fixed order" note and pick Explain. */
+export const CURSOR_PAPER_DEMO: CanvasOp[] = [
+  S("One more thing: why that fixed order breaks the causal claim, and how §6 would fix it."),
+  { op: "frame", id: "fx_f", x: 1300, y: 800, w: 1000, h: 1120, name: "Why it can't prove causality, and the fix (§5–6)" },
+  { op: "text", id: "fx_t", x: 1340, y: 830, w: 920, size: "m", text: "Inline help always came second, so any improvement could be practice, fatigue, or an easier passage. The paper's own fix:" },
+  { op: "shape", id: "fx_1", kind: "rectangle", x: 1340, y: 960, w: 280, h: 90, label: "Randomize the order", color: "green", fill: "semi" },
+  { op: "shape", id: "fx_2", kind: "rectangle", x: 1660, y: 960, w: 280, h: 90, label: "Counterbalance passages", color: "green", fill: "semi" },
+  { op: "arrow", id: "fx_a1", from: "fx_1", to: "fx_2" },
+  { op: "shape", id: "fx_3", kind: "rectangle", x: 1980, y: 960, w: 280, h: 90, label: "Delayed recall + error bars", color: "green", fill: "semi" },
+  { op: "arrow", id: "fx_a2", from: "fx_2", to: "fx_3" },
+  { op: "arrow", id: "fx_a3", from: "ex_n1", to: "fx_f", color: "grey", dash: "dashed" },
+  { op: "svg", id: "fx_ill", x: 1340, y: 1080, w: 920, h: 200, svg: orderSvg },
+  { op: "focus", ids: ["fx_ill", "fx_1", "fx_2", "fx_3"] },
+  W(900),
+  { op: "say", text: "The peer-review brain evolution, basically:", mood: "😂" },
+  { op: "image", id: "fx_meme", x: 1340, y: 1320, w: 400, h: 560, url: "https://i.imgflip.com/1jwhww.jpg" },
+  { op: "text", id: "fx_meme_t1", x: 1355, y: 1345, w: 180, size: "s", font: "sans", text: "74 > 62, inline help wins, ship it" },
+  { op: "text", id: "fx_meme_t2", x: 1355, y: 1485, w: 180, size: "s", font: "sans", text: "wait… everyone did inline second. practice effect?" },
+  { op: "text", id: "fx_meme_t3", x: 1355, y: 1625, w: 180, size: "s", font: "sans", text: "randomize order, counterbalance passages" },
+  { op: "text", id: "fx_meme_t4", x: 1355, y: 1765, w: 180, size: "s", font: "sans", text: "report error bars and delayed recall" },
+  { op: "focus", ids: ["fx_meme"], zoom: 1.0 },
+  W(1600),
+  { op: "svg", id: "fx_spark", x: 1780, y: 1320, w: 460, h: 300, svg: sparkleSvg },
+  S("That's Marg: it reads the paper with you, draws the idea, and digs in wherever you ask. Thanks for watching!"),
+  { op: "focus", ids: ["pp_f", "ex_f", "fx_f"] },
+];
+
+export const DEMOS: Demo[] = [
+  {
+    title: "How a neural network learns",
+    ops: [
+      S("Let's walk through how a neural network learns, step by step."),
+      { op: "frame", id: "nn_f", x: 100, y: 100, w: 1080, h: 700, name: "How a neural network learns" },
+      { op: "text", id: "nn_t1", x: 140, y: 130, text: "How a neural network learns", size: "xl" },
+      { op: "text", id: "nn_t2", x: 140, y: 190, w: 520, size: "m", text: "A network is layers of tiny math units joined by weights. Learning means nudging those weights until the outputs stop being wrong." },
+      W(400),
+      S("First, the shape of the thing: layers of neurons connected by weights."),
+      { op: "svg", id: "nn_net", x: 140, y: 290, w: 440, h: 300, svg: networkSvg() },
+      { op: "focus", ids: ["nn_t1", "nn_t2", "nn_net"] },
+      W(900),
+      S("Now the learning loop: four steps repeated thousands of times."),
+      { op: "shape", id: "nn_s1", kind: "rectangle", x: 640, y: 290, w: 200, h: 80, label: "1. Forward pass", color: "blue", fill: "semi" },
+      { op: "shape", id: "nn_s2", kind: "rectangle", x: 920, y: 290, w: 200, h: 80, label: "2. Measure loss", color: "orange", fill: "semi" },
+      { op: "arrow", id: "nn_a1", from: "nn_s1", to: "nn_s2" },
+      { op: "shape", id: "nn_s3", kind: "rectangle", x: 920, y: 450, w: 200, h: 80, label: "3. Backpropagate", color: "violet", fill: "semi" },
+      { op: "arrow", id: "nn_a2", from: "nn_s2", to: "nn_s3" },
+      { op: "shape", id: "nn_s4", kind: "rectangle", x: 640, y: 450, w: 200, h: 80, label: "4. Update weights", color: "green", fill: "semi" },
+      { op: "arrow", id: "nn_a3", from: "nn_s3", to: "nn_s4" },
+      { op: "arrow", id: "nn_a4", from: "nn_s4", to: "nn_s1", label: "repeat" },
+      { op: "focus", ids: ["nn_s1", "nn_s2", "nn_s3", "nn_s4"] },
+      W(900),
+      S("The update step is gradient descent: rolling downhill on the loss landscape."),
+      { op: "svg", id: "nn_loss", x: 640, y: 570, w: 300, h: 200, svg: lossSvg },
+      { op: "note", id: "nn_n1", x: 960, y: 570, text: "Takeaway: predict → measure error → adjust weights a little → repeat.", color: "yellow" },
+      { op: "focus", ids: ["nn_loss", "nn_n1"] },
+      W(900),
+      S("That's the whole loop. Ask me to zoom into backpropagation, or try a worked example!"),
+      { op: "focus", ids: ["nn_f"] },
+    ],
+  },
+  {
+    title: "How HTTPS works",
+    ops: shift([
+      S("Here's what happens in the first second when you open a secure website."),
+      { op: "frame", id: "ht_f", x: 100, y: 100, w: 1000, h: 640, name: "How HTTPS works" },
+      { op: "text", id: "ht_t1", x: 140, y: 130, text: "How HTTPS works", size: "xl" },
+      { op: "text", id: "ht_t2", x: 140, y: 190, w: 600, size: "m", text: "Key idea: use slow public-key crypto once to agree on a secret, then fast symmetric encryption for everything else." },
+      { op: "shape", id: "ht_c", kind: "rectangle", x: 140, y: 300, w: 200, h: 90, label: "Browser (client)", color: "blue", fill: "semi" },
+      { op: "shape", id: "ht_s", kind: "rectangle", x: 840, y: 300, w: 200, h: 90, label: "Website (server)", color: "green", fill: "semi" },
+      { op: "focus", ids: ["ht_t1", "ht_c", "ht_s"] },
+      W(700),
+      S("Step one: the browser says hello and lists the ciphers it supports."),
+      { op: "shape", id: "ht_1", kind: "rectangle", x: 440, y: 280, w: 300, h: 56, label: "1. ClientHello: versions, ciphers", color: "light-blue", fill: "semi" },
+      { op: "arrow", id: "ht_a1", from: "ht_c", to: "ht_1" },
+      { op: "arrow", id: "ht_a2", from: "ht_1", to: "ht_s" },
+      S("Step two: the server replies with its certificate — its ID card."),
+      { op: "shape", id: "ht_2", kind: "rectangle", x: 440, y: 356, w: 300, h: 56, label: "2. ServerHello + certificate", color: "green", fill: "semi" },
+      { op: "arrow", id: "ht_a3", from: "ht_1", to: "ht_2" },
+      S("Step three: the browser checks the certificate was signed by a trusted authority."),
+      { op: "shape", id: "ht_3", kind: "rectangle", x: 440, y: 432, w: 300, h: 56, label: "3. Verify certificate (CA)", color: "violet", fill: "semi" },
+      { op: "arrow", id: "ht_a4", from: "ht_2", to: "ht_3" },
+      { op: "focus", ids: ["ht_1", "ht_2", "ht_3"] },
+      W(600),
+      S("Step four: both sides derive the same secret key without ever sending it openly."),
+      { op: "shape", id: "ht_4", kind: "rectangle", x: 440, y: 508, w: 300, h: 56, label: "4. Key exchange → session key", color: "orange", fill: "semi" },
+      { op: "arrow", id: "ht_a5", from: "ht_3", to: "ht_4" },
+      S("Step five: everything is encrypted. Eavesdroppers only see scrambled bytes."),
+      { op: "shape", id: "ht_5", kind: "rectangle", x: 440, y: 584, w: 300, h: 56, label: "5. Encrypted HTTP traffic", color: "light-green", fill: "solid" },
+      { op: "arrow", id: "ht_a6", from: "ht_4", to: "ht_5" },
+      { op: "svg", id: "ht_lock", x: 140, y: 440, w: 200, h: 160, svg: lockSvg },
+      { op: "note", id: "ht_n1", x: 840, y: 440, text: "The padlock means two things: identity verified + traffic encrypted.", color: "yellow" },
+      { op: "focus", ids: ["ht_4", "ht_5", "ht_lock", "ht_n1"] },
+      W(900),
+      S("That's HTTPS! Want me to dive into certificates or the key-exchange math?"),
+      { op: "focus", ids: ["ht_f"] },
+    ], 1260),
+  },
+];
+
+/** Stage 1 extras: excerpts Marg lifts off each page while scrolling the PDF. */
+function quoteCard(tag: string, lines: string[], hue: string) {
+  const text = lines.map((l, i) => `<text x='40' y='${92 + i * 26}' font-family='Georgia, "Times New Roman", serif' font-size='18' fill='#1f2230'>${l}</text>`).join("");
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 190'><defs><filter id='qs' x='-10%' y='-10%' width='120%' height='130%'><feDropShadow dx='0' dy='8' stdDeviation='9' flood-color='#1b1b3a' flood-opacity='.14'/></filter></defs><g filter='url(#qs)'><rect x='8' y='8' width='324' height='174' rx='14' fill='#ffffff'/></g><rect x='8' y='8' width='6' height='174' rx='3' fill='${hue}'/><text x='40' y='40' font-family='-apple-system, Helvetica, Arial, sans-serif' font-size='11' font-weight='700' letter-spacing='1.6' fill='#8a8f9c'>${tag.toUpperCase()}</text><text x='24' y='70' font-family='Georgia, serif' font-size='34' fill='${hue}' opacity='.9'>“</text>${text}</svg>`;
+}
+
+export const PAGE_EXCERPTS: CanvasOp[][] = [
+  [{ op: "svg", id: "pq_1", x: 100, y: -160, w: 340, h: 190, svg: quoteCard("Page 1 · Abstract", ["Explanations beside a passage", "help readers understand", "without losing their place."], "#4f7df3") }],
+  [{ op: "svg", id: "pq_2", x: 470, y: -160, w: 340, h: 190, svg: quoteCard("Page 2 · Figure 1", ["Separate chat: 62", "Inline help: 74", "No confidence intervals."], "#2e9e5b") }],
+  [{ op: "svg", id: "pq_3", x: 840, y: -160, w: 340, h: 190, svg: quoteCard("Page 3 · Limitations", ["Fixed order creates a", "practice or fatigue confound.", "Not randomized."], "#d9534f") }],
+];

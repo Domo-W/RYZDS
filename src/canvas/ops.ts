@@ -8,7 +8,7 @@ export type Dash = "draw" | "solid" | "dashed" | "dotted";
 export type Font = "draw" | "sans" | "serif" | "mono";
 
 export type CanvasOp =
-  | { op: "say"; text: string }
+  | { op: "say"; text: string; mood?: string }
   | { op: "wait"; ms: number }
   | { op: "text"; id: string; x: number; y: number; text: string; size?: Size; w?: number; color?: Color; font?: Font; align?: "start" | "middle" | "end" }
   | { op: "note"; id: string; x: number; y: number; text: string; color?: Color }
