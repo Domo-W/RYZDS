@@ -108,3 +108,8 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 
 /* Dot-grid canvas */
 .stage .tl-background { background-color: #fafafa; background-image: radial-gradient(circle, rgba(0,0,0,.16) 1.2px, transparent 1.3px); background-size: 24px 24px; }
+
+/* Frames sit on the canvas instead of painting a white box */
+.stage .tl-frame__body { fill: transparent !important; stroke: rgba(0,0,0,.18) !important; stroke-dasharray: 6 5; }
+.stage .tl-frame-heading { background: transparent; box-shadow: none; }
+.stage .tl-frame-label { color: #444; font-weight: 700; }
