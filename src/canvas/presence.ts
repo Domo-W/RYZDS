@@ -57,7 +57,7 @@ export class ClaudePresence {
   }
 
   say(text: string, mood?: string) {
-    this.put({ chatMessage: text, userName: `Marg ${ClaudePresence.moodFor(text, mood)}` });
+    this.put({ userName: `Marg ${ClaudePresence.moodFor(text, mood)}` });
     if (this.sayTimer) clearTimeout(this.sayTimer);
     this.sayTimer = setTimeout(() => this.put({ chatMessage: "", userName: "Marg 🙂" }), 7000);
   }
