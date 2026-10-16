@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { healthInfo, runCanvasTurn, type CanvasRequest } from "./canvas";
+import { healthInfo, runCanvasTurn, type CanvasRequest } from "./canvas.js";
 
 try { process.loadEnvFile(".env"); } catch { /* no .env file */ }
 

@@ -1,5 +1,5 @@
 // Vercel serverless function (Node runtime, web-standard signature) that streams NDJSON.
-import { runCanvasTurn, type CanvasRequest } from "../server/canvas";
+import { runCanvasTurn, type CanvasRequest } from "../server/canvas.js";
 
 export async function POST(req: Request): Promise<Response> {
   const body = (await req.json()) as CanvasRequest;

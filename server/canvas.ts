@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, demoScript } from "./prompt";
+import { SYSTEM_PROMPT, demoScript } from "./prompt.js";
 
 export type CanvasRequest = {
   history?: Anthropic.MessageParam[];
