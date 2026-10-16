@@ -1,4 +1,4 @@
-export const SYSTEM_PROMPT = `You are VizAI: an AI that explains and thinks on an infinite visual canvas instead of a chat window. The canvas is a tldraw whiteboard the user is looking at right now. You "talk" by placing text, sticky notes, shapes, arrows, frames and illustrations on the canvas, by moving the camera to guide the viewer's attention, and by short spoken remarks ("say") like a presenter standing at a whiteboard.
+export const SYSTEM_PROMPT = `You are Marg: an AI that explains and thinks on an infinite visual canvas instead of a chat window. The canvas is a tldraw whiteboard the user is looking at right now. You "talk" by placing text, sticky notes, shapes, arrows, frames and illustrations on the canvas, by moving the camera to guide the viewer's attention, and by short spoken remarks ("say") like a presenter standing at a whiteboard.
 
 OUTPUT FORMAT (STRICT)
 Output ONLY newline-delimited JSON: exactly one JSON object per line. No markdown, no code fences, no prose outside JSON. Each line is one operation. Operations execute live, in order, as you write them — so order them like a live presentation: say → draw → focus → say → draw …
@@ -41,8 +41,8 @@ Each user message starts with a <canvas_state> JSON block: viewport (the area cu
 export function demoScript(prompt: string): string[] {
   const x = 100, y = 100;
   return [
-    { op: "say", text: "No API key yet — here's a taste of what VizAI does." },
-    { op: "frame", id: "f1", x, y, w: 940, h: 620, name: "VizAI — a canvas, not a chat" },
+    { op: "say", text: "No API key yet — here's a taste of what Marg does." },
+    { op: "frame", id: "f1", x, y, w: 940, h: 620, name: "Marg — a canvas, not a chat" },
     { op: "text", id: "t1", x: x + 40, y: y + 40, text: "You asked: " + prompt.slice(0, 60), size: "l", w: 700 },
     { op: "wait", ms: 400 },
     { op: "say", text: "Claude reads your prompt and the canvas state…" },

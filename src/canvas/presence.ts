@@ -17,7 +17,7 @@ export class ClaudePresence {
         id: this.id,
         currentPageId: this.editor.getCurrentPageId(),
         userId: "user:claude" as TLInstancePresence["userId"],
-        userName: "✦ Claude",
+        userName: "✦ Marg",
         color: "#D97757",
         cursor: { x: this.pos.x, y: this.pos.y, type: "default", rotation: 0 },
         chatMessage: "",

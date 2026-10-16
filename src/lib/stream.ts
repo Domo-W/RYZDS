@@ -79,5 +79,8 @@ export class OpQueue {
     })();
   }
 
+  /** Drop everything not yet applied (the op in flight still finishes). */
+  cancel() { this.q.length = 0; this.buf = ""; }
+
   async drain() { while (this.running) await this.running; }
 }

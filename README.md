@@ -1,4 +1,4 @@
-# VizAI — an AI that explains on a canvas, not in a chat box
+# Marg (VizAI) — an AI that explains on a canvas, not in a chat box
 
 Most chatbots are stuck in a text thread. VizAI gives Claude an infinite whiteboard instead.
 You ask a question; Claude **draws the answer live** — titles, diagrams, arrows, sticky-note

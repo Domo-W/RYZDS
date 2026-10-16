@@ -5,6 +5,10 @@ import { ClaudePresence } from "./canvas/presence";
 import { describeCanvas, exportCanvasPng } from "./canvas/snapshot";
 import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
 import mascot from "./Icon-Mascot.png";
+import { CURSOR_DEMO, DEMOS, STAGE_NAMES, type Demo } from "./demos";
+import type { CanvasOp } from "./canvas/ops";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Status = "idle" | "thinking" | "drawing";
 type LogItem = { role: "user" | "claude"; text: string; id: number };
@@ -45,6 +49,10 @@ export default function App() {
   const [thought, setThought] = useState("");
   const [modelLabel, setModelLabel] = useState("");
   const [ping, setPing] = useState<Ping | null>(null);
+  const [demoStage, setDemoStage] = useState<number | null>(null);
+  const skipRef = useRef<(() => void) | null>(null);
+  const skipFlag = useRef(false);
+  const demoAbort = useRef(false);
   const [log, setLog] = useState<LogItem[]>([]);
   const [prompt, setPrompt] = useState("");
   const [seeCanvas, setSeeCanvas] = useState(true);
@@ -100,7 +108,76 @@ export default function App() {
     }
   }, [editor, status, seeCanvas, pushLog]);
 
-  const stop = () => abortRef.current?.abort();
+  /** Plays a pre-recorded explanation through the same choreography, no API needed. */
+  const runDemo = useCallback(async (demo: Demo) => {
+    const applier = applierRef.current;
+    if (!editor || !applier || status !== "idle") return;
+    pushLog("user", demo.title);
+    setStatus("drawing");
+    setModelLabel("Demo");
+    const queue = new OpQueue(applier);
+    applier.beginTurn();
+    try {
+      for (const op of demo.ops) queue.feed(JSON.stringify(op) + "\n");
+      await queue.drain();
+      historyRef.current.push({ role: "user", content: demo.title }, { role: "assistant", content: demo.ops.map((o) => JSON.stringify(o)).join("\n") });
+    } finally {
+      await applier.finishTurn();
+      setStatus("idle");
+    }
+  }, [editor, status, pushLog]);
+
+  /** Plays ops through the live choreography; resolves early when Skip is pressed. */
+  const playOps = useCallback(async (ops: CanvasOp[]) => {
+    const applier = applierRef.current!;
+    const queue = new OpQueue(applier);
+    applier.beginTurn();
+    skipFlag.current = false;
+    const skipped = new Promise<void>((resolve) => { skipRef.current = () => { skipFlag.current = true; queue.cancel(); resolve(); }; });
+    for (const op of ops) queue.feed(JSON.stringify(op) + "\n");
+    await Promise.race([queue.drain(), skipped]);
+    skipRef.current = null;
+    await applier.finishTurn();
+  }, []);
+
+  const skippableSleep = async (ms: number) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipFlag.current && !demoAbort.current) await sleep(100); };
+  const skip = () => { skipFlag.current = true; skipRef.current?.(); };
+
+  /** The 3-stage presentation demo: two drawings, then the cursor ping. No API calls. */
+  const runStagedDemo = useCallback(async () => {
+    const ed = editor;
+    const applier = applierRef.current;
+    if (!ed || !applier || status !== "idle") return;
+    setStatus("drawing");
+    setModelLabel("Demo");
+    demoAbort.current = false;
+    try {
+      setDemoStage(0); pushLog("user", DEMOS[0].title);
+      await playOps([{ op: "clear" }, ...DEMOS[0].ops]);
+      if (demoAbort.current) return;
+      setDemoStage(1); pushLog("user", DEMOS[1].title);
+      await playOps(DEMOS[1].ops);
+      if (demoAbort.current) return;
+      setDemoStage(2); pushLog("user", "⌖ Ping the “Backpropagate” box → Explain");
+      skipFlag.current = false;
+      const target = ed.getShapePageBounds(applier.idFor("nn_s3"));
+      if (target) {
+        ed.zoomToBounds(target, { inset: 260, targetZoom: 1.2, animation: { duration: 800 } });
+        await skippableSleep(1000);
+        const scr = ed.pageToScreen({ x: target.midX, y: target.midY });
+        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x, sy: scr.y, px: Math.round(target.midX), py: Math.round(target.midY), near: ["nn_s3"] });
+        await skippableSleep(2200);
+        setPing(null);
+      }
+      if (!demoAbort.current) await playOps(CURSOR_DEMO);
+    } finally {
+      setDemoStage(null);
+      setPing(null);
+      setStatus("idle");
+    }
+  }, [editor, status, pushLog, playOps]);
+
+  const stop = () => { if (demoStage !== null) { demoAbort.current = true; skip(); } else abortRef.current?.abort(); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -139,14 +216,15 @@ export default function App() {
           <input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={status === "idle" ? "Ask anything — Claude will explain it on the canvas…" : "Claude is on the canvas…"}
+            placeholder={status === "idle" ? "Ask anything — Marg will explain it on the canvas…" : "Marg is on the canvas…"}
             disabled={status !== "idle"}
             autoFocus
           />
+          <button type="button" className="icon-btn" title="Play the 3-stage demo" onClick={() => void runStagedDemo()} disabled={status !== "idle"}>▶</button>
           <button type="button" className={`icon-btn ${ping ? "on" : ""}`} title="Ping a spot on the canvas (⌘P)"
             onClick={() => setPing((p) => (p ? null : { mode: "arm" }))} disabled={status !== "idle"}>⌖</button>
           <button type="button" className={`icon-btn ${seeCanvas ? "on" : ""}`} aria-pressed={seeCanvas}
-            title={seeCanvas ? "Claude sees the canvas — click to turn off" : "Claude can't see the canvas — click to turn on"}
+            title={seeCanvas ? "Marg sees the canvas — click to turn off" : "Marg can't see the canvas — click to turn on"}
             onClick={() => setSeeCanvas((v) => !v)}>◉</button>
           {status === "idle"
             ? <button type="submit" className="go" disabled={!prompt.trim()} aria-label="Send">↑</button>
@@ -155,7 +233,7 @@ export default function App() {
         {ping?.mode === "arm" && status === "idle" && (
           <div className="status glass arm"><span className="dot" /><span className="txt">Click a spot on the canvas to ask about it · Esc to cancel</span></div>
         )}
-        {ping && status === "idle" && (
+        {ping && (status === "idle" || demoStage !== null) && (
           <div className="ping-capture" onClick={ping.mode === "arm" ? onPingClick : () => setPing(null)}>
             {ping.mode === "wheel" && (
               <div className="wheel" style={{ left: ping.sx, top: ping.sy }} onClick={(e) => e.stopPropagation()}>
@@ -174,17 +252,29 @@ export default function App() {
         {status !== "idle" && (
           <div className={`status glass ${status}`}>
             <span className="dot" />
-            <span className="txt">{status === "thinking" ? (thought ? `${modelLabel || "Claude"} is thinking… ${thought}` : `${modelLabel || "Claude"} is thinking…`) : `${modelLabel || "Claude"} is drawing…`}</span>
+            <span className="txt">{status === "thinking" ? `Marg${modelLabel ? ` · ${modelLabel}` : ""} is thinking…${thought ? ` ${thought}` : ""}` : `Marg${modelLabel ? ` · ${modelLabel}` : ""} is drawing…`}</span>
           </div>
         )}
         {empty && status === "idle" && (
           <div className="suggestions">
-            <img className="mascot-hero" src={mascot} alt="VizAI mascot" />
+            <img className="mascot-hero" src={mascot} alt="Marg" />
             <h1>Ask. Watch it explain.</h1>
-            <p>An AI that thinks on a canvas instead of a chat box.</p>
+            <p>Meet Marg — an AI that thinks on a canvas instead of a chat box.</p>
+            <div className="chips demos">
+              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the 3-stage demo</button>
+              {DEMOS.map((d) => <button key={d.title} className="glass demo" onClick={() => void runDemo(d)}>▶ {d.title}</button>)}
+            </div>
             <div className="chips">
               {SUGGESTIONS.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
             </div>
+          </div>
+        )}
+        {demoStage !== null && (
+          <div className="demobar glass">
+            <span className="dot" />
+            <span className="stage">Stage {demoStage + 1}/3</span>
+            <span className="txt">{STAGE_NAMES[demoStage]}</span>
+            <button type="button" onClick={skip}>Skip ▶</button>
           </div>
         )}
         {says.length > 0 && (
