@@ -116,3 +116,7 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 @keyframes scan { from { top: -110px; } to { top: 100%; } }
 .scan .scanlabel { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em; box-shadow: 0 8px 24px rgba(217,119,87,.45); }
 @media (prefers-color-scheme: dark) { .paper .pbody { background: #202024; } .paper .icon-btn:hover { background: rgba(255,255,255,.08); } }
+
+/* Dot-grid canvas */
+.stage .tl-background { background-color: #fafafa; background-image: radial-gradient(circle, rgba(0,0,0,.16) 1.2px, transparent 1.3px); background-size: 24px 24px; }
+@media (prefers-color-scheme: dark) { .stage .tl-background { background-color: #161618; background-image: radial-gradient(circle, rgba(255,255,255,.14) 1.2px, transparent 1.3px); } }

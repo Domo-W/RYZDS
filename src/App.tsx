@@ -35,9 +35,6 @@ const TL_COMPONENTS: TLComponents = {
 
 const SUGGESTIONS = [
   "Explain how a neural network learns, visually",
-  "Plan a 3-day trip to Tokyo as a map of days",
-  "Sketch the login flow for a mobile app",
-  "Compare React vs Vue in a diagram",
   "Draw how HTTPS works, step by step",
 ];
 
@@ -262,7 +259,7 @@ export default function App() {
     void send(`${prompt}. Target: ${target}. Keep new content near that spot.`);
   };
   const empty = log.length === 0;
-  const chips = paperOpen && paper ? ["Explain this research paper to me", "Draw how the experiment was run, step by step", ...SUGGESTIONS] : SUGGESTIONS;
+  const chips = paperOpen && paper ? ["Explain this research paper to me", ...SUGGESTIONS] : SUGGESTIONS;
 
   return (
     <div className="app">
@@ -285,10 +282,6 @@ export default function App() {
             autoFocus
           />
           <button type="button" className={`icon-btn ${paperOpen ? "on" : ""}`} title="Show / hide the research paper" onClick={() => setPaperOpen((v) => !v)}>📄</button>
-          <button type="button" className="icon-btn" title="Play the demo" onClick={() => void runStagedDemo()} disabled={status !== "idle"}>▶</button>
-          <button type="button" className={`icon-btn ${seeCanvas ? "on" : ""}`} aria-pressed={seeCanvas}
-            title={seeCanvas ? "Marg sees the canvas — click to turn off" : "Marg can't see the canvas — click to turn on"}
-            onClick={() => setSeeCanvas((v) => !v)}>◉</button>
           {demoStage !== null && (
             <>
               <button type="button" className={`icon-btn ${paused ? "on" : ""}`} onClick={togglePause} title={paused ? "Resume demo" : "Pause demo"}>{paused ? "▶" : "⏸"}</button>
@@ -330,8 +323,7 @@ export default function App() {
             <h1>Ask. Watch it explain.</h1>
             <p>Meet Marg — an AI that thinks on a canvas instead of a chat box.</p>
             <div className="chips demos">
-              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the demo (3 stages)</button>
-              {DEMOS.map((d) => <button key={d.title} className="glass demo" onClick={() => void runDemo(d)}>▶ {d.title}</button>)}
+              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the demo</button>
             </div>
             <div className="chips">
               {chips.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
