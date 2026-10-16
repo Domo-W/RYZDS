@@ -23,6 +23,7 @@ export default function App() {
   const abortRef = useRef<AbortController | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [thought, setThought] = useState("");
+  const [modelLabel, setModelLabel] = useState("");
   const [log, setLog] = useState<LogItem[]>([]);
   const [prompt, setPrompt] = useState("");
   const [seeCanvas, setSeeCanvas] = useState(true);
@@ -49,6 +50,7 @@ export default function App() {
     pushLog("user", text);
     setStatus("thinking");
     setThought("");
+    setModelLabel("");
     const canvas = describeCanvas(editor);
     let image: string | null = null;
     if (seeCanvas) { try { image = await exportCanvasPng(editor); } catch (e) { console.warn("export failed", e); } }
@@ -59,7 +61,8 @@ export default function App() {
     applier.beginTurn();
     try {
       await streamCanvas({ history: historyRef.current, prompt: text, canvas, image }, (ev) => {
-        if (ev.t === "thinking") { thinking += ev.text; setThought(thinking.slice(-140)); }
+        if (ev.t === "meta") setModelLabel(ev.label);
+        else if (ev.t === "thinking") { thinking += ev.text; setThought(thinking.slice(-140)); }
         else if (ev.t === "text") { if (!drawing) { drawing = true; setStatus("drawing"); } raw += ev.text; queue.feed(ev.text); }
         else if (ev.t === "error") pushLog("claude", "⚠️ " + ev.message);
       }, ac.signal);
@@ -106,7 +109,7 @@ export default function App() {
         {status !== "idle" && (
           <div className={`status glass ${status}`}>
             <span className="dot" />
-            <span className="txt">{status === "thinking" ? (thought ? `Thinking… ${thought}` : "Thinking…") : "Drawing on the canvas…"}</span>
+            <span className="txt">{status === "thinking" ? (thought ? `${modelLabel || "Claude"} is thinking… ${thought}` : `${modelLabel || "Claude"} is thinking…`) : `${modelLabel || "Claude"} is drawing…`}</span>
           </div>
         )}
         {empty && status === "idle" && (

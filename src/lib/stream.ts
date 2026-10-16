@@ -4,6 +4,7 @@ import type { CanvasApplier } from "../canvas/apply";
 export type StreamEvent =
   | { t: "text"; text: string }
   | { t: "thinking"; text: string }
+  | { t: "meta"; model: string; label: string }
   | { t: "error"; message: string }
   | { t: "done"; stop_reason?: string | null; usage?: Record<string, unknown> };
 

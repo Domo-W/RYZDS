@@ -8,7 +8,7 @@ camera** to walk you through it, like a person explaining at a whiteboard.
 ## How it works
 
 ```
-you type a prompt ──▶ /api/canvas (Express) ──▶ Claude (claude-opus-5-5, streaming)
+you type a prompt ──▶ /api/canvas (Express) ──▶ Claude (Sonnet 5.5 / Haiku 5.5, streaming)
                                                       │
                  tldraw canvas ◀── ops applied live ◀──┘  NDJSON: one canvas operation per line
 ```
@@ -34,8 +34,9 @@ npm run dev              # web on http://localhost:5173, API on :8787
 
 Without an API key the app runs a built-in demo script so the UI can still be shown off.
 
-Optional env: `VIZAI_MODEL` (default `claude-opus-5-5`; `claude-sonnet-5-5` is faster/cheaper),
-`VIZAI_EFFORT` (`low` | `medium` | `high`), `VIZAI_PORT`.
+**Model routing:** short, simple prompts go to `claude-haiku-5-5` (fast, cheap); explanations,
+comparisons, plans, and anything with a canvas screenshot go to `claude-sonnet-5-5`. Override with
+`VIZAI_MODEL`, `VIZAI_FAST_MODEL`, `VIZAI_EFFORT`, `VIZAI_FAST_EFFORT`, `VIZAI_PORT` in `.env`.
 
 Production: `npm run build && npm start` serves the built app and API from one process.
 
