@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env*
+*.tsbuildinfo
+public/cmaps/
+public/standard_fonts/
+public/wasm/
+public/pdf.worker.min.mjs
+public/PDFJS-LICENSE.txt
