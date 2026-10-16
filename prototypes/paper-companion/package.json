@@ -1,0 +1,36 @@
+{
+  "name": "margin-paper-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "postinstall": "node scripts/copy-pdf-assets.mjs",
+    "dev": "concurrently -k -n web,api \"vite\" \"tsx watch server/index.ts\"",
+    "build": "tsc --noEmit && vite build",
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "pdfjs-dist": "^5.4.0",
+    "lucide-react": "^1.31.0",
+    "react-markdown": "^10.1.0",
+    "zod": "^3.25.76",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.13",
+    "typescript": "5.9.3",
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.0",
+    "concurrently": "^9.0.0"
+  }
+}
