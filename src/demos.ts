@@ -18,8 +18,8 @@ const lossSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><
 
 const lockSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 160'><rect width='200' height='160' rx='14' fill='#fdf2f2'/><path d='M70,75 V55 a30,30 0 0 1 60,0 V75' fill='none' stroke='#555' stroke-width='8' stroke-linecap='round'/><rect x='50' y='75' width='100' height='65' rx='12' fill='#f2b134'/><circle cx='100' cy='103' r='8' fill='#333'/><rect x='97' y='103' width='6' height='20' rx='3' fill='#333'/></svg>`;
 
-function shift(ops: CanvasOp[], dx: number): CanvasOp[] {
-  return ops.map((o) => ("x" in o && typeof o.x === "number" ? ({ ...o, x: o.x + dx } as CanvasOp) : o));
+function shift(ops: CanvasOp[], dx: number, dy = 0): CanvasOp[] {
+  return ops.map((o) => ("x" in o && typeof o.x === "number" ? ({ ...o, x: o.x + dx, y: ("y" in o && typeof o.y === "number" ? o.y + dy : undefined) } as CanvasOp) : o));
 }
 
 /** Stage 3: what happens after you ping the "Backpropagate" box and pick Explain. */
@@ -39,12 +39,12 @@ export const CURSOR_DEMO: CanvasOp[] = [
   { op: "focus", ids: ["nn_f", "bp_f"] },
 ];
 
-export const STAGE_NAMES = ["Drawing: how a neural network learns", "Drawing: how HTTPS works", "Cursor: ping a spot & ask", "Reading: explain the research paper"];
+export const STAGE_NAMES = ["Reading: explain the research paper", "Drawing: how the experiment ran", "Cursor: ping the flaw & ask why"];
 
 const figureSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><rect width='400' height='300' rx='14' fill='#f4f7f2'/><text x='200' y='30' text-anchor='middle' font-family='sans-serif' font-size='15' font-weight='bold' fill='#293e36'>Figure 1 · Comprehension score (0–100)</text><line x1='70' y1='250' x2='370' y2='250' stroke='#293e36' stroke-width='2'/><line x1='70' y1='50' x2='70' y2='250' stroke='#293e36' stroke-width='2'/><rect x='120' y='126' width='80' height='124' rx='4' fill='#9fb988'/><rect x='250' y='102' width='80' height='148' rx='4' fill='#4f7df3'/><g font-family='sans-serif' text-anchor='middle' fill='#293e36'><text x='160' y='116' font-size='18' font-weight='bold'>62</text><text x='290' y='92' font-size='18' font-weight='bold'>74</text><text x='160' y='272' font-size='13'>Separate chat</text><text x='290' y='272' font-size='13'>Inline help</text></g></svg>`;
 
 /** Stage 4: Marg reads the sample paper on the left and explains it. */
-export const PAPER_DEMO: CanvasOp[] = [
+const PAPER_DEMO_RAW: CanvasOp[] = [
   S("I read the paper on the left: the abstract, Figure 1, then the methods. Here's the gist."),
   { op: "frame", id: "pp_f", x: 100, y: 1280, w: 1100, h: 720, name: "Paper: Reading with Local Explanations" },
   { op: "text", id: "pp_t1", x: 140, y: 1310, text: "Reading with Local Explanations", size: "xl" },
@@ -71,6 +71,52 @@ export const PAPER_DEMO: CanvasOp[] = [
   W(600),
   S("Bottom line: a promising pattern, but this design can't prove inline help causes better understanding."),
   { op: "focus", ids: ["pp_f"] },
+];
+export const PAPER_DEMO: CanvasOp[] = shift(PAPER_DEMO_RAW, 0, -1180);
+
+/** Stage 2: the study design from §4 (page 3), drawn as a flow to the right of the summary. */
+export const EXPERIMENT_DEMO: CanvasOp[] = [
+  S("Let me draw how the experiment actually ran, so you can see where the problem hides."),
+  { op: "frame", id: "ex_f", x: 1300, y: 100, w: 1000, h: 640, name: "The study design (§4, page 3)" },
+  { op: "text", id: "ex_t1", x: 1340, y: 130, text: "How the experiment ran", size: "xl" },
+  { op: "shape", id: "ex_s1", kind: "ellipse", x: 1340, y: 220, w: 200, h: 90, label: "24 participants", color: "blue", fill: "semi" },
+  { op: "shape", id: "ex_s2", kind: "rectangle", x: 1600, y: 220, w: 260, h: 90, label: "Passage A + separate chat", color: "grey", fill: "semi" },
+  { op: "arrow", id: "ex_a1", from: "ex_s1", to: "ex_s2" },
+  { op: "shape", id: "ex_s3", kind: "rectangle", x: 1920, y: 220, w: 260, h: 90, label: "Quiz 1 · 10 questions", color: "light-green", fill: "semi" },
+  { op: "arrow", id: "ex_a2", from: "ex_s2", to: "ex_s3" },
+  W(300),
+  S("Then everyone did the second passage with inline help. Same order for all 24 people."),
+  { op: "shape", id: "ex_s4", kind: "rectangle", x: 1600, y: 380, w: 260, h: 90, label: "Passage B + inline help", color: "blue", fill: "semi" },
+  { op: "arrow", id: "ex_a3", from: "ex_s3", to: "ex_s4", label: "always this order" },
+  { op: "shape", id: "ex_s5", kind: "rectangle", x: 1920, y: 380, w: 260, h: 90, label: "Quiz 2 · 10 questions", color: "light-green", fill: "semi" },
+  { op: "arrow", id: "ex_a4", from: "ex_s4", to: "ex_s5" },
+  { op: "focus", ids: ["ex_s1", "ex_s2", "ex_s3", "ex_s4", "ex_s5"] },
+  W(700),
+  S("That fixed order is the catch: practice and fatigue get mixed into the 12-point gap."),
+  { op: "note", id: "ex_n1", x: 1340, y: 400, text: "Fixed order = practice & fatigue effects are mixed into the result. Not randomized. (§5)", color: "light-red" },
+  { op: "shape", id: "ex_s6", kind: "rectangle", x: 1600, y: 560, w: 580, h: 80, label: "Result: 62 → 74, but no randomization, no error bars", color: "orange", fill: "semi" },
+  { op: "arrow", id: "ex_a5", from: "ex_s5", to: "ex_s6" },
+  { op: "arrow", id: "ex_a6", from: "ex_n1", to: "ex_s6", color: "red", dash: "dashed" },
+  { op: "focus", ids: ["ex_f"] },
+  W(500),
+  S("So the chart is real, but the design can't tell us what caused the jump."),
+];
+
+/** Stage 3: what Marg draws after you ping the "fixed order" note and pick Explain. */
+export const CURSOR_PAPER_DEMO: CanvasOp[] = [
+  S("Pinged! Here's why that fixed order breaks the causal claim, and how §6 would fix it."),
+  { op: "frame", id: "fx_f", x: 1300, y: 800, w: 1000, h: 360, name: "Why it can't prove causality, and the fix (§5–6)" },
+  { op: "text", id: "fx_t", x: 1340, y: 830, w: 920, size: "m", text: "Inline help always came second, so any improvement could be practice, fatigue, or an easier passage. The paper's own fix:" },
+  { op: "shape", id: "fx_1", kind: "rectangle", x: 1340, y: 960, w: 280, h: 90, label: "Randomize the order", color: "green", fill: "semi" },
+  { op: "shape", id: "fx_2", kind: "rectangle", x: 1660, y: 960, w: 280, h: 90, label: "Counterbalance passages", color: "green", fill: "semi" },
+  { op: "arrow", id: "fx_a1", from: "fx_1", to: "fx_2" },
+  { op: "shape", id: "fx_3", kind: "rectangle", x: 1980, y: 960, w: 280, h: 90, label: "Delayed recall + error bars", color: "green", fill: "semi" },
+  { op: "arrow", id: "fx_a2", from: "fx_2", to: "fx_3" },
+  { op: "arrow", id: "fx_a3", from: "ex_n1", to: "fx_f", color: "grey", dash: "dashed" },
+  { op: "focus", ids: ["fx_f"] },
+  W(900),
+  S("That's Marg: read the paper, draw the idea, and point at anything to dig in. Thanks for watching!"),
+  { op: "focus", ids: ["pp_f", "ex_f", "fx_f"] },
 ];
 
 export const DEMOS: Demo[] = [

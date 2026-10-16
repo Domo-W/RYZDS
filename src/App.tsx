@@ -5,7 +5,7 @@ import { ClaudePresence } from "./canvas/presence";
 import { describeCanvas, exportCanvasPng } from "./canvas/snapshot";
 import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
 import mascot from "./Icon-Mascot.png";
-import { CURSOR_DEMO, DEMOS, PAPER_DEMO, STAGE_NAMES, type Demo } from "./demos";
+import { CURSOR_PAPER_DEMO, DEMOS, EXPERIMENT_DEMO, PAPER_DEMO, STAGE_NAMES, type Demo } from "./demos";
 import { PaperPanel, type Paper } from "./ui/PaperPanel";
 import type { CanvasOp } from "./canvas/ops";
 
@@ -186,34 +186,34 @@ export default function App() {
     setModelLabel("Demo");
     demoAbort.current = false;
     try {
-      setDemoStage(0); pushLog("user", DEMOS[0].title);
-      await typePrompt("Explain how a neural network learns");
-      await playOps([{ op: "clear" }, ...DEMOS[0].ops]);
+      // Stage 1: read the paper on the left, then explain it.
+      setDemoStage(0); pushLog("user", "Explain this research paper to me");
+      setPaperOpen(true);
+      await typePrompt("Explain this research paper to me");
+      setReading(true); skipFlag.current = false;
+      for (const pg of [1, 2, 3]) { setPaperPage(pg); await skippableSleep(1400); if (skipFlag.current || demoAbort.current) break; }
+      setReading(false); setPaperPage(1);
+      if (!demoAbort.current) await playOps([{ op: "clear" }, ...PAPER_DEMO]);
       if (demoAbort.current) return;
-      setDemoStage(1); pushLog("user", DEMOS[1].title);
-      await typePrompt("Draw how HTTPS works, step by step");
-      await playOps(DEMOS[1].ops);
+      // Stage 2: draw the experiment design from the paper.
+      setDemoStage(1); pushLog("user", "Draw how the experiment was run, step by step");
+      await typePrompt("Draw how the experiment was run, step by step");
+      await playOps(EXPERIMENT_DEMO);
       if (demoAbort.current) return;
-      setDemoStage(2); pushLog("user", "⌖ Ping the “Backpropagate” box → Explain");
+      // Stage 3: ping the flaw and ask why.
+      setDemoStage(2); pushLog("user", "⌖ Ping the “fixed order” note → Explain");
       skipFlag.current = false;
-      const target = ed.getShapePageBounds(applier.idFor("nn_s3"));
+      const target = ed.getShapePageBounds(applier.idFor("ex_n1"));
       if (target) {
         ed.zoomToBounds(target, { inset: 260, targetZoom: 1.2, animation: { duration: 800 } });
         await skippableSleep(1000);
         const scr = ed.pageToScreen({ x: target.midX, y: target.midY });
         const crect = ed.getContainer().getBoundingClientRect();
-        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x - crect.left, sy: scr.y - crect.top, px: Math.round(target.midX), py: Math.round(target.midY), near: ["nn_s3"] });
+        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x - crect.left, sy: scr.y - crect.top, px: Math.round(target.midX), py: Math.round(target.midY), near: ["ex_n1"] });
         await skippableSleep(2200);
         setPing(null);
       }
-      if (!demoAbort.current) await playOps(CURSOR_DEMO);
-      if (demoAbort.current) return;
-      setDemoStage(3); pushLog("user", "Explain the paper on the left");
-      await typePrompt("Explain the paper on the left");
-      setPaperOpen(true); setReading(true); skipFlag.current = false;
-      for (const pg of [1, 2, 3]) { setPaperPage(pg); await skippableSleep(1400); if (skipFlag.current || demoAbort.current) break; }
-      setReading(false); setPaperPage(1);
-      if (!demoAbort.current) await playOps(PAPER_DEMO);
+      if (!demoAbort.current) await playOps(CURSOR_PAPER_DEMO);
     } finally {
       setDemoStage(null);
       setPing(null);
@@ -248,7 +248,7 @@ export default function App() {
     void send(`${prompt}. Target: ${target}. Keep new content near that spot.`);
   };
   const empty = log.length === 0;
-  const chips = paperOpen && paper ? ["Explain the paper on the left, visually", ...SUGGESTIONS] : SUGGESTIONS;
+  const chips = paperOpen && paper ? ["Explain this research paper to me", "Draw how the experiment was run, step by step", ...SUGGESTIONS] : SUGGESTIONS;
 
   return (
     <div className="app">
@@ -312,7 +312,7 @@ export default function App() {
             <h1>Ask. Watch it explain.</h1>
             <p>Meet Marg — an AI that thinks on a canvas instead of a chat box.</p>
             <div className="chips demos">
-              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the demo (4 stages)</button>
+              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the demo (3 stages)</button>
               {DEMOS.map((d) => <button key={d.title} className="glass demo" onClick={() => void runDemo(d)}>▶ {d.title}</button>)}
             </div>
             <div className="chips">
@@ -323,7 +323,7 @@ export default function App() {
         {demoStage !== null && (
           <div className="demobar glass">
             <span className="dot" />
-            <span className="stage">Stage {demoStage + 1}/4</span>
+            <span className="stage">Stage {demoStage + 1}/3</span>
             <span className="txt">{STAGE_NAMES[demoStage]}</span>
             <button type="button" onClick={skip}>Skip ▶</button>
           </div>
