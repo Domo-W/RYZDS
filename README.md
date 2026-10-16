@@ -67,3 +67,10 @@ Or from the CLI: `npx vercel` then `npx vercel --prod` (set the env var with `ve
 - "Draw how HTTPS works, step by step"
 - Draw a rough sketch yourself, then: "label what I drew and fix the layout"
 - "Zoom in on the second step and expand it"
+
+## Paper-reading prototype
+
+[Margin](prototypes/paper-companion/README.md) is an independent cursor-first PDF
+companion: full-paper AI context, a customizable four-action wheel, cursor-side
+explanations and right-hand chat. It runs separately on port 5174 with a per-tab
+OpenAI API key; the VizAI canvas setup above remains unchanged.
