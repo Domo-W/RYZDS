@@ -5,7 +5,7 @@ import { ClaudePresence } from "./canvas/presence";
 import { describeCanvas, exportCanvasPng } from "./canvas/snapshot";
 import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
 import mascot from "./Icon-Mascot.png";
-import { CURSOR_PAPER_DEMO, DEMOS, EXPERIMENT_DEMO, PAPER_DEMO, STAGE_NAMES, type Demo } from "./demos";
+import { CURSOR_PAPER_DEMO, DEMOS, EXPERIMENT_DEMO, PAGE_EXCERPTS, PAPER_DEMO, type Demo } from "./demos";
 import { PaperPanel, type Paper } from "./ui/PaperPanel";
 import type { CanvasOp } from "./canvas/ops";
 
@@ -58,6 +58,9 @@ export default function App() {
   const skipRef = useRef<(() => void) | null>(null);
   const skipFlag = useRef(false);
   const demoAbort = useRef(false);
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  const togglePause = () => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); if (applierRef.current) applierRef.current.paused = pausedRef.current; };
   const [log, setLog] = useState<LogItem[]>([]);
   const [prompt, setPrompt] = useState("");
   const [seeCanvas, setSeeCanvas] = useState(true);
@@ -167,7 +170,10 @@ export default function App() {
     await applier.finishTurn();
   }, []);
 
-  const skippableSleep = async (ms: number) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipFlag.current && !demoAbort.current) await sleep(100); };
+  const skippableSleep = async (ms: number) => {
+    let left = ms;
+    while (left > 0 && !skipFlag.current && !demoAbort.current) { await sleep(100); if (!pausedRef.current) left -= 100; }
+  };
   const skip = () => { skipFlag.current = true; skipRef.current?.(); };
 
   /** Types a prompt into the box so the audience sees what is being asked. */
@@ -191,9 +197,16 @@ export default function App() {
       setPaperOpen(true);
       await typePrompt("Explain this research paper to me");
       setReading(true); skipFlag.current = false;
-      for (const pg of [1, 2, 3]) { setPaperPage(pg); await skippableSleep(1400); if (skipFlag.current || demoAbort.current) break; }
+      await playOps([{ op: "clear" }]);
+      for (const pg of [1, 2, 3]) {
+        setPaperPage(pg); await skippableSleep(1200);
+        if (skipFlag.current || demoAbort.current) break;
+        await playOps(PAGE_EXCERPTS[pg - 1]);
+        await skippableSleep(500);
+        if (skipFlag.current || demoAbort.current) break;
+      }
       setReading(false); setPaperPage(1);
-      if (!demoAbort.current) await playOps([{ op: "clear" }, ...PAPER_DEMO]);
+      if (!demoAbort.current) await playOps(PAPER_DEMO);
       if (demoAbort.current) return;
       // Stage 2: draw the experiment design from the paper.
       setDemoStage(1); pushLog("user", "Draw how the experiment was run, step by step");
@@ -218,6 +231,7 @@ export default function App() {
       setDemoStage(null);
       setPing(null);
       setReading(false);
+      pausedRef.current = false; setPaused(false); if (applierRef.current) applierRef.current.paused = false;
       setStatus("idle");
     }
   }, [editor, status, pushLog, playOps]);
@@ -272,11 +286,15 @@ export default function App() {
           />
           <button type="button" className={`icon-btn ${paperOpen ? "on" : ""}`} title="Show / hide the research paper" onClick={() => setPaperOpen((v) => !v)}>📄</button>
           <button type="button" className="icon-btn" title="Play the demo" onClick={() => void runStagedDemo()} disabled={status !== "idle"}>▶</button>
-          <button type="button" className={`icon-btn ${ping ? "on" : ""}`} title="Ping a spot on the canvas (⌘P)"
-            onClick={() => setPing((p) => (p ? null : { mode: "arm" }))} disabled={status !== "idle"}>⌖</button>
           <button type="button" className={`icon-btn ${seeCanvas ? "on" : ""}`} aria-pressed={seeCanvas}
             title={seeCanvas ? "Marg sees the canvas — click to turn off" : "Marg can't see the canvas — click to turn on"}
             onClick={() => setSeeCanvas((v) => !v)}>◉</button>
+          {demoStage !== null && (
+            <>
+              <button type="button" className={`icon-btn ${paused ? "on" : ""}`} onClick={togglePause} title={paused ? "Resume demo" : "Pause demo"}>{paused ? "▶" : "⏸"}</button>
+              <button type="button" className="icon-btn" onClick={skip} title="Skip to next stage">⏭</button>
+            </>
+          )}
           {status === "idle"
             ? <button type="submit" className="go" disabled={!prompt.trim()} aria-label="Send">↑</button>
             : <button type="button" className="stop" onClick={stop} aria-label="Stop">■</button>}
@@ -318,14 +336,6 @@ export default function App() {
             <div className="chips">
               {chips.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
             </div>
-          </div>
-        )}
-        {demoStage !== null && (
-          <div className="demobar glass">
-            <span className="dot" />
-            <span className="stage">Stage {demoStage + 1}/3</span>
-            <span className="txt">{STAGE_NAMES[demoStage]}</span>
-            <button type="button" onClick={skip}>Skip ▶</button>
           </div>
         )}
       </div>

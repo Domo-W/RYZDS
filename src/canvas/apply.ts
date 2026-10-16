@@ -13,6 +13,8 @@ export class CanvasApplier {
   private created = new Set<TLShapeId>();
   private lastCameraMove = 0;
   private focusedExplicitly = false;
+  /** When true, ops wait (demo pause). */
+  paused = false;
 
   constructor(private editor: Editor, private presence: ClaudePresence, private onSay: (t: string) => void) {}
 
@@ -35,6 +37,7 @@ export class CanvasApplier {
   }
 
   async apply(op: CanvasOp) {
+    while (this.paused) await sleep(120);
     const ed = this.editor;
     switch (op.op) {
       case "say":

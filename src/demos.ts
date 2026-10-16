@@ -190,3 +190,10 @@ export const DEMOS: Demo[] = [
     ], 1260),
   },
 ];
+
+/** Stage 1 extras: excerpts Marg lifts off each page while scrolling the PDF. */
+export const PAGE_EXCERPTS: CanvasOp[][] = [
+  [{ op: "note", id: "pq_1", x: 100, y: -160, color: "light-blue", text: "p.1 Abstract: “explanations beside a selected passage help readers… without losing their place.”" }],
+  [{ op: "note", id: "pq_2", x: 340, y: -160, color: "light-blue", text: "p.2 Figure 1: “separate chat 62, inline help 74… no confidence intervals.”" }],
+  [{ op: "note", id: "pq_3", x: 580, y: -160, color: "light-blue", text: "p.3 §5: “The fixed order creates a practice or fatigue confound… not randomized.”" }],
+];
