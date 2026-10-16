@@ -55,14 +55,6 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .suggestions { --tx: -50%; --ty: -50%; }
 .promptbar:focus-within { animation: none; }
 
-@media (prefers-color-scheme: dark) {
-  :root { --ink: #f4f4f6; --muted: #9a9aa5; --glass: rgba(28, 28, 34, 0.62); --glass-strong: rgba(36, 36, 44, 0.86); --glass-border: rgba(255,255,255,.12); --glass-shadow: 0 10px 40px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.08) inset; }
-  .promptbar button { background: #fff; color: #111; }
-  .status { color: #d6d6de; }
-  .say { color: #b9b9c2; }
-  .toggle:hover { background: rgba(255,255,255,.08); }
-  .suggestions h1 { text-shadow: none; }
-}
 
 /* Ping wheel */
 .ping-btn { border: 0; background: transparent !important; color: var(--muted) !important; font-size: 19px; padding: 4px 8px !important; line-height: 1; }
@@ -83,7 +75,6 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .promptbar button.go, .promptbar button.stop { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; }
 .promptbar button.stop { font-size: 11px; }
 .status { top: 72px; }
-@media (prefers-color-scheme: dark) { .promptbar .icon-btn:hover:not(:disabled) { background: rgba(255,255,255,.08) !important; } }
 
 /* Team mascot */
 .mascot { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; margin-right: 8px; flex: none; }
@@ -99,7 +90,6 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .demobar .dot { width: 9px; height: 9px; border-radius: 50%; background: #2fbf71; box-shadow: 0 0 12px #2fbf71; animation: pulse 1.1s ease-in-out infinite; }
 .demobar .stage { font-weight: 700; color: var(--accent); }
 .demobar button { border: 0; border-radius: 999px; padding: 6px 12px; font-weight: 600; font-size: 13px; background: var(--ink); color: #fff; cursor: pointer; }
-@media (prefers-color-scheme: dark) { .demobar button { background: #fff; color: #111; } }
 
 /* Research paper panel */
 .paper { width: min(420px, 38vw); flex: none; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; z-index: 1002; position: relative; transition: box-shadow .4s var(--ease); }
@@ -115,8 +105,6 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .scan .beam { position: absolute; left: 0; right: 0; height: 110px; background: linear-gradient(to bottom, rgba(217,119,87,0), rgba(217,119,87,.30) 55%, rgba(217,119,87,0)); border-top: 2px solid rgba(217,119,87,.85); animation: scan 2.4s linear infinite; }
 @keyframes scan { from { top: -110px; } to { top: 100%; } }
 .scan .scanlabel { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em; box-shadow: 0 8px 24px rgba(217,119,87,.45); }
-@media (prefers-color-scheme: dark) { .paper .pbody { background: #202024; } .paper .icon-btn:hover { background: rgba(255,255,255,.08); } }
 
 /* Dot-grid canvas */
 .stage .tl-background { background-color: #fafafa; background-image: radial-gradient(circle, rgba(0,0,0,.16) 1.2px, transparent 1.3px); background-size: 24px 24px; }
-@media (prefers-color-scheme: dark) { .stage .tl-background { background-color: #161618; background-image: radial-gradient(circle, rgba(255,255,255,.14) 1.2px, transparent 1.3px); } }
