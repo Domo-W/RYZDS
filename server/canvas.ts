@@ -6,6 +6,7 @@ export type CanvasRequest = {
   prompt?: string;
   canvas?: unknown;
   image?: string | null;
+  paper?: { name: string; data: string } | null;
 };
 
 type Effort = "low" | "medium" | "high";
@@ -33,7 +34,7 @@ const getClient = () => (client ??= new Anthropic());
 
 /** Runs one canvas turn, emitting NDJSON envelope events through `send`. Shared by Express (local) and Vercel (prod). */
 export async function runCanvasTurn(body: CanvasRequest, send: (o: unknown) => void, signal?: AbortSignal) {
-  const { history = [], prompt = "", canvas = {}, image = null } = body ?? {};
+  const { history = [], prompt = "", canvas = {}, image = null, paper = null } = body ?? {};
 
   if (!hasKey()) {
     for (const line of demoScript(prompt)) {
@@ -46,6 +47,12 @@ export async function runCanvasTurn(body: CanvasRequest, send: (o: unknown) => v
   }
 
   const userContent: Anthropic.ContentBlockParam[] = [];
+  if (paper?.data) {
+    userContent.push({
+      type: "document", title: paper.name, cache_control: { type: "ephemeral" },
+      source: { type: "base64", media_type: "application/pdf", data: paper.data },
+    });
+  }
   if (image) userContent.push({ type: "image", source: { type: "base64", media_type: "image/png", data: image } });
   userContent.push({ type: "text", text: `<canvas_state>\n${JSON.stringify(canvas)}\n</canvas_state>\n\n${prompt}` });
 
@@ -54,7 +61,7 @@ export async function runCanvasTurn(body: CanvasRequest, send: (o: unknown) => v
     { role: "user", content: userContent },
   ];
 
-  const pick = pickModel(prompt, Boolean(image));
+  const pick = pickModel(prompt, Boolean(image) || Boolean(paper));
   send({ t: "meta", model: pick.model, label: pick.label });
   const isHaiku = pick.model.includes("haiku");
 

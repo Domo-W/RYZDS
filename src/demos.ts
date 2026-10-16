@@ -39,7 +39,39 @@ export const CURSOR_DEMO: CanvasOp[] = [
   { op: "focus", ids: ["nn_f", "bp_f"] },
 ];
 
-export const STAGE_NAMES = ["Drawing: how a neural network learns", "Drawing: how HTTPS works", "Cursor: ping a spot & ask"];
+export const STAGE_NAMES = ["Drawing: how a neural network learns", "Drawing: how HTTPS works", "Cursor: ping a spot & ask", "Reading: explain the research paper"];
+
+const figureSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><rect width='400' height='300' rx='14' fill='#f4f7f2'/><text x='200' y='30' text-anchor='middle' font-family='sans-serif' font-size='15' font-weight='bold' fill='#293e36'>Figure 1 · Comprehension score (0–100)</text><line x1='70' y1='250' x2='370' y2='250' stroke='#293e36' stroke-width='2'/><line x1='70' y1='50' x2='70' y2='250' stroke='#293e36' stroke-width='2'/><rect x='120' y='126' width='80' height='124' rx='4' fill='#9fb988'/><rect x='250' y='102' width='80' height='148' rx='4' fill='#4f7df3'/><g font-family='sans-serif' text-anchor='middle' fill='#293e36'><text x='160' y='116' font-size='18' font-weight='bold'>62</text><text x='290' y='92' font-size='18' font-weight='bold'>74</text><text x='160' y='272' font-size='13'>Separate chat</text><text x='290' y='272' font-size='13'>Inline help</text></g></svg>`;
+
+/** Stage 4: Marg reads the sample paper on the left and explains it. */
+export const PAPER_DEMO: CanvasOp[] = [
+  S("I read the paper on the left: the abstract, Figure 1, then the methods. Here's the gist."),
+  { op: "frame", id: "pp_f", x: 100, y: 1280, w: 1100, h: 720, name: "Paper: Reading with Local Explanations" },
+  { op: "text", id: "pp_t1", x: 140, y: 1310, text: "Reading with Local Explanations", size: "xl" },
+  { op: "text", id: "pp_t2", x: 140, y: 1365, w: 560, size: "m", text: "A fictional study: do explanations placed beside the passage help readers understand without losing their place? (§1, page 1)" },
+  W(300),
+  S("The core comparison: a separate chat panel versus inline help right next to the text."),
+  { op: "shape", id: "pp_s1", kind: "rectangle", x: 140, y: 1470, w: 220, h: 90, label: "Separate chat panel", color: "grey", fill: "semi" },
+  { op: "shape", id: "pp_s2", kind: "rectangle", x: 480, y: 1470, w: 220, h: 90, label: "Inline explanation", color: "blue", fill: "semi" },
+  { op: "arrow", id: "pp_a1", from: "pp_s1", to: "pp_s2", label: "vs" },
+  { op: "note", id: "pp_n1", x: 140, y: 1600, text: "Context recovery cost: the effort to find your passage again after getting help. (§2)", color: "yellow" },
+  { op: "focus", ids: ["pp_t1", "pp_s1", "pp_s2", "pp_n1"] },
+  W(700),
+  S("Figure 1 on page 2 is the headline result. Let me redraw it."),
+  { op: "svg", id: "pp_fig", x: 760, y: 1310, w: 400, h: 300, svg: figureSvg },
+  { op: "text", id: "pp_t3", x: 760, y: 1625, w: 400, size: "s", text: "Figure 1 (p.2): 74 vs 62 on a 100-point quiz — 12 points higher with inline help. No error bars, no significance tests." },
+  { op: "focus", ids: ["pp_fig", "pp_t3"] },
+  W(700),
+  S("Now the methods on page 3, which decide how much to trust that chart."),
+  { op: "shape", id: "pp_s3", kind: "rectangle", x: 380, y: 1640, w: 340, h: 70, label: "24 participants · fixed order · not randomized", color: "light-red", fill: "semi" },
+  { op: "shape", id: "pp_s4", kind: "rectangle", x: 380, y: 1740, w: 340, h: 70, label: "Practice / fatigue confound → no causal claim", color: "red", fill: "semi" },
+  { op: "arrow", id: "pp_a2", from: "pp_s3", to: "pp_s4" },
+  { op: "note", id: "pp_n2", x: 140, y: 1740, text: "Next experiment (§6): randomize order, counterbalance passages, measure delayed recall.", color: "light-green" },
+  { op: "focus", ids: ["pp_s3", "pp_s4", "pp_n2"] },
+  W(600),
+  S("Bottom line: a promising pattern, but this design can't prove inline help causes better understanding."),
+  { op: "focus", ids: ["pp_f"] },
+];
 
 export const DEMOS: Demo[] = [
   {

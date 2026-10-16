@@ -5,7 +5,8 @@ import { ClaudePresence } from "./canvas/presence";
 import { describeCanvas, exportCanvasPng } from "./canvas/snapshot";
 import { OpQueue, streamCanvas, type HistoryMessage } from "./lib/stream";
 import mascot from "./Icon-Mascot.png";
-import { CURSOR_DEMO, DEMOS, STAGE_NAMES, type Demo } from "./demos";
+import { CURSOR_DEMO, DEMOS, PAPER_DEMO, STAGE_NAMES, type Demo } from "./demos";
+import { PaperPanel, type Paper } from "./ui/PaperPanel";
 import type { CanvasOp } from "./canvas/ops";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -50,6 +51,10 @@ export default function App() {
   const [modelLabel, setModelLabel] = useState("");
   const [ping, setPing] = useState<Ping | null>(null);
   const [demoStage, setDemoStage] = useState<number | null>(null);
+  const [paper, setPaper] = useState<Paper | null>(null);
+  const [paperOpen, setPaperOpen] = useState(false);
+  const [paperPage, setPaperPage] = useState(1);
+  const [reading, setReading] = useState(false);
   const skipRef = useRef<(() => void) | null>(null);
   const skipFlag = useRef(false);
   const demoAbort = useRef(false);
@@ -61,6 +66,25 @@ export default function App() {
 
   useEffect(() => {
     fetch("/api/health").then((r) => r.json()).then(setHealth).catch(() => setHealth({ hasKey: false, model: "?" }));
+  }, []);
+
+  // Load the sample paper so the panel is ready for the demo.
+  useEffect(() => {
+    fetch("/sample.pdf").then((r) => r.blob()).then((blob) => new Promise<string>((res, rej) => {
+      const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob);
+    })).then((dataUrl) => {
+      setPaper({ name: "Reading with Local Explanations.pdf", url: "/sample.pdf", data: dataUrl.split(",")[1] ?? "" });
+      setPaperOpen(true);
+    }).catch(() => {});
+  }, []);
+
+  const loadPaperFile = useCallback((file: File) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      setPaper({ name: file.name, url: URL.createObjectURL(file), data: String(fr.result).split(",")[1] ?? "" });
+      setPaperOpen(true); setPaperPage(1);
+    };
+    fr.readAsDataURL(file);
   }, []);
 
   const pushLog = useCallback((role: LogItem["role"], text: string) => {
@@ -80,6 +104,8 @@ export default function App() {
     setStatus("thinking");
     setThought("");
     setModelLabel("");
+    const withPaper = paperOpen && !!paper;
+    setReading(withPaper);
     const canvas = describeCanvas(editor);
     let image: string | null = null;
     if (seeCanvas) { try { image = await exportCanvasPng(editor); } catch (e) { console.warn("export failed", e); } }
@@ -89,10 +115,10 @@ export default function App() {
     let raw = "", thinking = "", drawing = false;
     applier.beginTurn();
     try {
-      await streamCanvas({ history: historyRef.current, prompt: text, canvas, image }, (ev) => {
+      await streamCanvas({ history: historyRef.current, prompt: text, canvas, image, paper: withPaper ? { name: paper.name, data: paper.data } : null }, (ev) => {
         if (ev.t === "meta") setModelLabel(ev.label);
         else if (ev.t === "thinking") { thinking += ev.text; setThought(thinking.slice(-140)); }
-        else if (ev.t === "text") { if (!drawing) { drawing = true; setStatus("drawing"); } raw += ev.text; queue.feed(ev.text); }
+        else if (ev.t === "text") { if (!drawing) { drawing = true; setStatus("drawing"); setReading(false); } raw += ev.text; queue.feed(ev.text); }
         else if (ev.t === "error") pushLog("claude", "⚠️ " + ev.message);
       }, ac.signal);
       queue.flush();
@@ -104,9 +130,10 @@ export default function App() {
       await applier.finishTurn();
       setStatus("idle");
       setThought("");
+      setReading(false);
       abortRef.current = null;
     }
-  }, [editor, status, seeCanvas, pushLog]);
+  }, [editor, status, seeCanvas, pushLog, paper, paperOpen]);
 
   /** Plays a pre-recorded explanation through the same choreography, no API needed. */
   const runDemo = useCallback(async (demo: Demo) => {
@@ -143,6 +170,13 @@ export default function App() {
   const skippableSleep = async (ms: number) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipFlag.current && !demoAbort.current) await sleep(100); };
   const skip = () => { skipFlag.current = true; skipRef.current?.(); };
 
+  /** Types a prompt into the box so the audience sees what is being asked. */
+  const typePrompt = async (text: string) => {
+    for (let i = 1; i <= text.length && !skipFlag.current && !demoAbort.current; i++) { setPrompt(text.slice(0, i)); await sleep(22); }
+    await sleep(500);
+    setPrompt("");
+  };
+
   /** The 3-stage presentation demo: two drawings, then the cursor ping. No API calls. */
   const runStagedDemo = useCallback(async () => {
     const ed = editor;
@@ -153,9 +187,11 @@ export default function App() {
     demoAbort.current = false;
     try {
       setDemoStage(0); pushLog("user", DEMOS[0].title);
+      await typePrompt("Explain how a neural network learns");
       await playOps([{ op: "clear" }, ...DEMOS[0].ops]);
       if (demoAbort.current) return;
       setDemoStage(1); pushLog("user", DEMOS[1].title);
+      await typePrompt("Draw how HTTPS works, step by step");
       await playOps(DEMOS[1].ops);
       if (demoAbort.current) return;
       setDemoStage(2); pushLog("user", "⌖ Ping the “Backpropagate” box → Explain");
@@ -165,14 +201,23 @@ export default function App() {
         ed.zoomToBounds(target, { inset: 260, targetZoom: 1.2, animation: { duration: 800 } });
         await skippableSleep(1000);
         const scr = ed.pageToScreen({ x: target.midX, y: target.midY });
-        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x, sy: scr.y, px: Math.round(target.midX), py: Math.round(target.midY), near: ["nn_s3"] });
+        const crect = ed.getContainer().getBoundingClientRect();
+        if (!skipFlag.current) setPing({ mode: "wheel", sx: scr.x - crect.left, sy: scr.y - crect.top, px: Math.round(target.midX), py: Math.round(target.midY), near: ["nn_s3"] });
         await skippableSleep(2200);
         setPing(null);
       }
       if (!demoAbort.current) await playOps(CURSOR_DEMO);
+      if (demoAbort.current) return;
+      setDemoStage(3); pushLog("user", "Explain the paper on the left");
+      await typePrompt("Explain the paper on the left");
+      setPaperOpen(true); setReading(true); skipFlag.current = false;
+      for (const pg of [1, 2, 3]) { setPaperPage(pg); await skippableSleep(1400); if (skipFlag.current || demoAbort.current) break; }
+      setReading(false); setPaperPage(1);
+      if (!demoAbort.current) await playOps(PAPER_DEMO);
     } finally {
       setDemoStage(null);
       setPing(null);
+      setReading(false);
       setStatus("idle");
     }
   }, [editor, status, pushLog, playOps]);
@@ -192,7 +237,8 @@ export default function App() {
     if (!editor) return;
     const page = editor.screenToPage({ x: e.clientX, y: e.clientY });
     const near = editor.getShapesAtPoint(page, { hitInside: true, margin: 48 }).map((s) => s.id.replace(/^shape:/, ""));
-    setPing({ mode: "wheel", sx: e.clientX, sy: e.clientY, px: Math.round(page.x), py: Math.round(page.y), near });
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPing({ mode: "wheel", sx: e.clientX - rect.left, sy: e.clientY - rect.top, px: Math.round(page.x), py: Math.round(page.y), near });
   };
 
   const firePing = (prompt: string) => {
@@ -201,11 +247,15 @@ export default function App() {
     setPing(null);
     void send(`${prompt}. Target: ${target}. Keep new content near that spot.`);
   };
-  const says = log.filter((l) => l.role === "claude").slice(-4);
   const empty = log.length === 0;
+  const chips = paperOpen && paper ? ["Explain the paper on the left, visually", ...SUGGESTIONS] : SUGGESTIONS;
 
   return (
     <div className="app">
+      {paperOpen && (
+        <PaperPanel paper={paper} page={paperPage} reading={reading} onLoad={loadPaperFile} onClose={() => setPaperOpen(false)} />
+      )}
+      <div className="stage">
       <Tldraw onMount={onMount} components={TL_COMPONENTS} />
       <div className="overlay">
         {health && !health.hasKey && (
@@ -220,7 +270,8 @@ export default function App() {
             disabled={status !== "idle"}
             autoFocus
           />
-          <button type="button" className="icon-btn" title="Play the 3-stage demo" onClick={() => void runStagedDemo()} disabled={status !== "idle"}>▶</button>
+          <button type="button" className={`icon-btn ${paperOpen ? "on" : ""}`} title="Show / hide the research paper" onClick={() => setPaperOpen((v) => !v)}>📄</button>
+          <button type="button" className="icon-btn" title="Play the demo" onClick={() => void runStagedDemo()} disabled={status !== "idle"}>▶</button>
           <button type="button" className={`icon-btn ${ping ? "on" : ""}`} title="Ping a spot on the canvas (⌘P)"
             onClick={() => setPing((p) => (p ? null : { mode: "arm" }))} disabled={status !== "idle"}>⌖</button>
           <button type="button" className={`icon-btn ${seeCanvas ? "on" : ""}`} aria-pressed={seeCanvas}
@@ -252,7 +303,7 @@ export default function App() {
         {status !== "idle" && (
           <div className={`status glass ${status}`}>
             <span className="dot" />
-            <span className="txt">{status === "thinking" ? `Marg${modelLabel ? ` · ${modelLabel}` : ""} is thinking…${thought ? ` ${thought}` : ""}` : `Marg${modelLabel ? ` · ${modelLabel}` : ""} is drawing…`}</span>
+            <span className="txt">{reading && paper ? `Marg is reading ${paper.name}…` : status === "thinking" ? `Marg${modelLabel ? ` · ${modelLabel}` : ""} is thinking…${thought ? ` ${thought}` : ""}` : `Marg${modelLabel ? ` · ${modelLabel}` : ""} is drawing…`}</span>
           </div>
         )}
         {empty && status === "idle" && (
@@ -261,27 +312,23 @@ export default function App() {
             <h1>Ask. Watch it explain.</h1>
             <p>Meet Marg — an AI that thinks on a canvas instead of a chat box.</p>
             <div className="chips demos">
-              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the 3-stage demo</button>
+              <button className="glass demo big" onClick={() => void runStagedDemo()}>▶ Play the demo (4 stages)</button>
               {DEMOS.map((d) => <button key={d.title} className="glass demo" onClick={() => void runDemo(d)}>▶ {d.title}</button>)}
             </div>
             <div className="chips">
-              {SUGGESTIONS.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
+              {chips.map((s) => <button key={s} className="glass" onClick={() => void send(s)}>{s}</button>)}
             </div>
           </div>
         )}
         {demoStage !== null && (
           <div className="demobar glass">
             <span className="dot" />
-            <span className="stage">Stage {demoStage + 1}/3</span>
+            <span className="stage">Stage {demoStage + 1}/4</span>
             <span className="txt">{STAGE_NAMES[demoStage]}</span>
             <button type="button" onClick={skip}>Skip ▶</button>
           </div>
         )}
-        {says.length > 0 && (
-          <div className="says">
-            {says.map((s, i) => <div key={s.id} className={`say glass ${i === says.length - 1 ? "latest" : ""}`}>{s.text}</div>)}
-          </div>
-        )}
+      </div>
       </div>
     </div>
   );

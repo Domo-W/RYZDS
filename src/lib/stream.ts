@@ -11,7 +11,7 @@ export type StreamEvent =
 export type HistoryMessage = { role: "user" | "assistant"; content: string };
 
 export async function streamCanvas(
-  body: { history: HistoryMessage[]; prompt: string; canvas: unknown; image: string | null },
+  body: { history: HistoryMessage[]; prompt: string; canvas: unknown; image: string | null; paper?: { name: string; data: string } | null },
   onEvent: (ev: StreamEvent) => void,
   signal: AbortSignal,
 ) {

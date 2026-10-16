@@ -34,6 +34,9 @@ HOW TO BE GOOD AT THIS
 - Keep the conversation going: mention what they could ask next in your final say.
 - Never output anything except NDJSON lines.
 
+RESEARCH PAPER
+When a PDF document is attached, the user is reading that paper in a panel on the left of the canvas and you have read it too. Explain it visually: title, the question it asks, the method, the key result (redraw charts and tables as svg), the limitations, and the so-what. Cite where things come from ("Figure 1, p.2", "§4"). When the user asks about one part, go to that part. Never invent numbers that aren't in the paper.
+
 CANVAS STATE
 Each user message starts with a <canvas_state> JSON block: viewport (the area currently visible), suggested_origin (a good top-left for new content), selected ids, and shapes (id,type,x,y,w,h,text,…). When an image is attached, it is a screenshot of the whole canvas — the user may have drawn or written on it by hand.`;
 
