@@ -113,3 +113,9 @@ html, body, #root, .app { margin: 0; height: 100%; width: 100%; font-family: -ap
 .stage .tl-frame__body { fill: transparent !important; stroke: rgba(0,0,0,.18) !important; stroke-dasharray: 6 5; }
 .stage .tl-frame-heading { background: transparent; box-shadow: none; }
 .stage .tl-frame-label { color: #444; font-weight: 700; }
+
+/* Motion: every shape pops onto the canvas */
+.stage .tl-shape > * { transform-origin: 50% 50%; animation: shapePop .55s cubic-bezier(.2, .9, .25, 1.15) both; }
+@keyframes shapePop { 0% { opacity: 0; transform: scale(.6) translateY(14px); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+.stage .tl-arrow > * { animation: arrowDraw .5s ease-out both; }
+@keyframes arrowDraw { from { opacity: 0; } to { opacity: 1; } }

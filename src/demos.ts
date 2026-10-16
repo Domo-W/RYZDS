@@ -213,8 +213,13 @@ export const DEMOS: Demo[] = [
 ];
 
 /** Stage 1 extras: excerpts Marg lifts off each page while scrolling the PDF. */
+function quoteCard(tag: string, lines: string[], hue: string) {
+  const text = lines.map((l, i) => `<text x='28' y='${86 + i * 24}' font-family='Georgia, serif' font-size='17' fill='#2a2a30'>${l}</text>`).join("");
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 190'><defs><linearGradient id='q' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ffffff'/><stop offset='1' stop-color='${hue}'/></linearGradient><filter id='qs' x='-10%' y='-10%' width='120%' height='130%'><feDropShadow dx='0' dy='10' stdDeviation='10' flood-color='#1b1b3a' flood-opacity='.18'/></filter></defs><g filter='url(#qs)'><rect x='8' y='8' width='324' height='174' rx='18' fill='url(#q)'/></g><text x='22' y='62' font-family='Georgia, serif' font-size='64' fill='#d97757' opacity='.55'>“</text><rect x='230' y='22' width='88' height='26' rx='13' fill='#d97757'/><text x='274' y='40' text-anchor='middle' font-family='sans-serif' font-size='13' font-weight='700' fill='#fff'>${tag}</text>${text}</svg>`;
+}
+
 export const PAGE_EXCERPTS: CanvasOp[][] = [
-  [{ op: "note", id: "pq_1", x: 100, y: -160, color: "light-blue", text: "p.1 Abstract: “explanations beside a selected passage help readers… without losing their place.”" }],
-  [{ op: "note", id: "pq_2", x: 340, y: -160, color: "light-blue", text: "p.2 Figure 1: “separate chat 62, inline help 74… no confidence intervals.”" }],
-  [{ op: "note", id: "pq_3", x: 580, y: -160, color: "light-blue", text: "p.3 §5: “The fixed order creates a practice or fatigue confound… not randomized.”" }],
+  [{ op: "svg", id: "pq_1", x: 100, y: -160, w: 340, h: 190, svg: quoteCard("p.1 · Abstract", ["Explanations beside a passage", "help readers understand", "without losing their place."], "#e3ecff") }],
+  [{ op: "svg", id: "pq_2", x: 470, y: -160, w: 340, h: 190, svg: quoteCard("p.2 · Figure 1", ["Separate chat: 62", "Inline help: 74", "No confidence intervals."], "#e2f5e9") }],
+  [{ op: "svg", id: "pq_3", x: 840, y: -160, w: 340, h: 190, svg: quoteCard("p.3 · §5 Limits", ["Fixed order creates a", "practice or fatigue confound.", "Not randomized."], "#ffe6e0") }],
 ];
